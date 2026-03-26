@@ -54,3 +54,10 @@ Add whatever helps you do your job. This is your cheat sheet.
 - Python 脚本（`scripts/ontology.py`）：此机器未装 Python，直接用文件操作代替
 - 支持类型：Person、Project、Task、Event、Document、Action 等
 - 关系约束可定义在 schema.yaml 中
+
+### novel-writing
+- 路径：`skills/novel-writing`
+- 参考：Novel-Claude 工业级网文框架（三段式引擎：世界观→分卷→场景写作）
+- 项目目录：`novel/`（logline.md、world.md、characters.md、outline/、beats/、chapters/）
+- 流程：Logline → 世界观 → 人物 → 情节结构 → 场景打点 → 写作 → 修订
+- 配合 ontology 记录实体（World、Character、Faction、PlotPoint）
