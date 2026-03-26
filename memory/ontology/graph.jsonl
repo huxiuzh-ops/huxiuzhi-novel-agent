@@ -12,3 +12,8 @@
 {"op":"create","entity":{"id":"plot_fact_001","type":"Fact","properties":{"content":"陈末在支管口留下暗号：一条横线+两个点，告知其他幸存者有人探索过此路"}}}
 {"op":"create","entity":{"id":"enemy_t1_001","type":"Entity","properties":{"type":"T1变异体","location":"永辉购物中心西侧废墟","status":"活跃","threat":"HIGH"}}}
 {"op":"relate","from":"mission_001","rel":"obstacles","to":"enemy_t1_001"}
+{"op":"create","entity":{"id":"char_shenling","type":"Character","properties":{"name":"沈聆","role":"female_lead","occupation":"护士","status":"重伤/无法行走","location":"与陈末同行"}}}
+{"op":"create","entity":{"id":"scene_ch003","type":"Scene","properties":{"chapter":3,"title":"永辉","location":"永辉购物中心/地下停车场","status":"completed"}}}
+{"op":"create","entity":{"id":"enemy_t1_group","type":"Entity","properties":{"type":"T1变异体群","count":"3","location":"永辉购物中心内","status":"追踪/已逃脱"}}}
+{"op":"relate","from":"char_chenmo","rel":"rescued","to":"char_shenling"}
+{"op":"relate","from":"char_shenling","rel":"joined","to":"char_chenmo"}
