@@ -5,3 +5,6 @@
 {"op":"relate","from":"char_chenmo","rel":"bound_to","to":"system_001"}
 {"op":"relate","from":"novel_鏈笘","rel":"has_protagonist","to":"char_chenmo"}
 
+{"op":"create","entity":{"id":"scene_ch001","type":"Scene","properties":{"chapter":1,"title":"系统激活","location":"江城废弃食品工厂","status":"completed"}}}
+{"op":"create","entity":{"id":"mission_001","type":"Mission","properties":{"name":"永辉购物中心","difficulty":"S","reward":"100剧情点","status":"accepted"}}}
+{"op":"relate","from":"char_chenmo","rel":"accepted_mission","to":"mission_001"}
