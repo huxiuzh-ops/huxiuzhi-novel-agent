@@ -1,0 +1,5 @@
+# ontology/graph.jsonl
+# Append-only knowledge graph. Each line is a JSON object.
+# Entity format: {"op":"create","entity":{"id":"...","type":"...","properties":{...}}}
+# Relation format: {"op":"relate","from":"...","rel":"...","to":"..."}
+
