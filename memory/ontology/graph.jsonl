@@ -1,5 +1,7 @@
-# ontology/graph.jsonl
-# Append-only knowledge graph. Each line is a JSON object.
-# Entity format: {"op":"create","entity":{"id":"...","type":"...","properties":{...}}}
-# Relation format: {"op":"relate","from":"...","rel":"...","to":"..."}
+{"op":"create","entity":{"id":"world_001","type":"World","properties":{"name":"玄天大陆","tierSystem":"9等境界","mainResource":"灵石"}}}
+{"op":"create","entity":{"id":"char_chenmo","type":"Character","properties":{"name":"陈末","role":"protagonist","status":"alive","location":"守望据点","level":1,"consciousness":"清醒","has_antibody":"hidden"}}}
+{"op":"create","entity":{"id":"system_001","type":"System","properties":{"name":"毒舌系统NO.001","mood":"annoyed","memory_state":"partial","creator":"亡魂作者"}}}
+{"op":"create","entity":{"id":"novel_末世","type":"Project","properties":{"name":"末世·毒舌系统","genre":"末世爽文","status":"创作中","logline":"陈末在丧尸横行的末世中绑定毒舌系统，一边被嘲讽一边升级，最终发现末世真相"}}}
+{"op":"relate","from":"char_chenmo","rel":"bound_to","to":"system_001"}
+{"op":"relate","from":"novel_末世","rel":"has_protagonist","to":"char_chenmo"}
 
