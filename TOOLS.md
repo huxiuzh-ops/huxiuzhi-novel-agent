@@ -38,3 +38,19 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 ---
 
 Add whatever helps you do your job. This is your cheat sheet.
+
+## 技能说明
+
+### self-improving-agent
+- 路径：`skills/self-improving-agent`
+- 日志文件：`.learnings/LEARNINGS.md`、`.learnings/ERRORS.md`、`.learnings/FEATURE_REQUESTS.md`
+- Hook 已启用（`self-improvement`），每次启动自动注入自省提醒
+- 触发：出错、被纠正、发现更好做法、用户请求不存在的能力
+
+### ontology
+- 路径：`skills/ontology`
+- 存储：`memory/ontology/graph.jsonl`（append-only，每次操作追加一行 JSON）
+- Schema：`memory/ontology/schema.yaml`
+- Python 脚本（`scripts/ontology.py`）：此机器未装 Python，直接用文件操作代替
+- 支持类型：Person、Project、Task、Event、Document、Action 等
+- 关系约束可定义在 schema.yaml 中
