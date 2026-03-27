@@ -97,3 +97,10 @@
 {"op":"create","entity":{"id":"mission_find_xingchao","type":"Mission","properties":{"name":"前往江城大学找到星巢入口","target":"江城大学（城西区）","status":"active","time_limit":"5天","difficulty":"SSS","obstacle":"城西是铁蝎帮和丧尸密集区；陈末抗体被压制；赵纵已盯上陈末"}}
 {"op":"relate","from":"char_chenmo","rel":"targeting","to":"mission_find_xingchao"}
 {"op":"relate","from":"char_chenmo","rel":"carries","to":"mission_find_xingchao"}
+{"op":"create","entity":{"id":"scene_ch010","type":"Scene","properties":{"chapter":10,"title":"种子","location":"江城大学·星巢地下研究所","status":"completed","summary":"陈末等人前往星巢，陈末与T2守望者对峙，进入核心用意识链接救出林雪"}}}
+{"op":"create","entity":{"id":"char_linxue","type":"Character","properties":{"name":"林雪","role":"key_person","status":"rescued","location":"星巢核心容器","consciousness":"已苏醒/虚弱","secret":"三年前为揭露织星者真相牺牲自己，意识被困在星巢服务器中"}}}
+{"op":"create","entity":{"id":"entity_star_nest","type":"Entity","properties":{"type":"星巢节点","location":"江城大学地下","status":"核心已被摧毁/防火墙消失","note":"12个节点之一，不是唯一节点"}}}
+{"op":"create","entity":{"id":"entity_guardian_t2","type":"Entity","properties":{"type":"守望者/T2智慧丧尸","location":"星巢核心","status":"守护星巢","note":"织星者的延伸，没有自由意志"}}}
+{"op":"relate","from":"scene_ch010","rel":"features","to":"entity_star_nest"}
+{"op":"relate","from":"scene_ch010","rel":"features","to":"entity_guardian_t2"}
+{"op":"relate","from":"char_linxue","rel":"rescued_in","to":"scene_ch010"}
