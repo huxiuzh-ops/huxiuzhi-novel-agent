@@ -83,3 +83,17 @@
 {"op":"create","entity":{"id":"mission_rescue_ye","type":"Mission","properties":{"name":"说服叶博士/带她离开守望据点","target":"守望据点","time_limit":"47小时","difficulty":"A","obstacle":"韩铮不会轻易放人，铁蝎帮追兵在路上"}}
 {"op":"relate","from":"char_chenmo","rel":"heading_to","to":"faction_shouwang"}
 {"op":"relate","from":"char_chenmo","rel":"carries","to":"mission_rescue_ye"}
+{"op":"create","entity":{"id":"scene_ch009","type":"Scene","properties":{"chapter":9,"title":"守望","location":"江城北区守望据点/仓库","status":"completed","events":["陈末一行抵达守望据点，周岩揭露韩铮与铁蝎帮暗中交易","通过阿宁得知叶博士被韩铮软禁，线索：种子在老地方","系统解析种子编码=江城大学=星巢最初建立地点","三个铁蝎帮先遣队在内应配合下出现，与陈末周岩遭遇","陈末假装投降，匕首+步枪近战击倒两人，一人逃脱","铁蝎帮特制子弹击中陈末手臂，含抑制T0抗体的化学物质","沈聆通风口潜入仓库找到叶博士，叶博士揭露赵纵用病毒改造人类的真正目的","韩铮带士兵围堵，叶博士拖延时间","陈末赶到，用血雾能力让士兵和韩铮全部失去意识","叶博士确认陈末身份：林雪选对人了","陈末等人成功逃出守望据点，下一目标：江城大学"]}}
+{"op":"update","entity_id":"char_chenmo","properties":{"location":"江城北区守望据点→江城西区（逃亡中）","status":"受伤/抗体被压制中","blood_ability":"血雾（代价：抗体被压制）","countdown":"5天"}}
+{"op":"update","entity_id":"char_shenling","properties":{"location":"守望据点→逃亡中","status":"安全"}}
+{"op":"update","entity_id":"char_dr_ye","properties":{"location":"守望据点→逃亡中","status":"获救"}}
+{"op":"update","entity_id":"char_hanzheng","properties":{"location":"守望据点","status":"昏迷中（被血雾制服）"}}
+{"op":"create","entity":{"id":"plot_fact_seed_location","type":"Fact","properties":{"content":"种子在老地方=星巢入口坐标编码，指向江城大学。星巢最初被建立的地方。林雪继承父亲遗志将星巢分散节点藏在江城地下。星巢入口在江城大学。"}}
+{"op":"create","entity":{"id":"plot_fact_hanzheng_truth","type":"Fact","properties":{"content":"韩铮是守望据点老大，退役军官。他与铁蝎帮暗中交易，用据点里不听话的人或高价值人员换取武器药品。叶博士被软禁是因为韩铮发现她想带走关于星巢的信息。"}}
+{"op":"create","entity":{"id":"plot_fact_iron_scorpion_bullets","type":"Fact","properties":{"content":"铁蝎帮使用特制子弹，内含抑制T0抗体活性的化学物质，专门用来对付觉醒者。陈末被这种子弹击中，抗体被压制，意识可能丧失。"}}
+{"op":"create","entity":{"id":"plot_fact_zhaozong_plan","type":"Fact","properties":{"content":"赵纵的真正目的不是用病毒救人，而是用T0病毒改造人类。叶博士亲口揭露：韩铮与赵纵交易是在与虎谋皮，赵纵只需要人的身体，不在乎据点。"}}
+{"op":"create","entity":{"id":"plot_fact_ye_chooses_chenmo","type":"Fact","properties":{"content":"叶博士确认陈末是林雪选中的人：看到了金属盒子上的信息，听到了种子暗号，知道陈末的血液能力。"}}
+{"op":"create","entity":{"id":"mission_rescue_ye","type":"Mission","properties":{"name":"说服叶博士/带她离开守望据点","target":"守望据点","status":"completed"}}
+{"op":"create","entity":{"id":"mission_find_xingchao","type":"Mission","properties":{"name":"前往江城大学找到星巢入口","target":"江城大学（城西区）","status":"active","time_limit":"5天","difficulty":"SSS","obstacle":"城西是铁蝎帮和丧尸密集区；陈末抗体被压制；赵纵已盯上陈末"}}
+{"op":"relate","from":"char_chenmo","rel":"targeting","to":"mission_find_xingchao"}
+{"op":"relate","from":"char_chenmo","rel":"carries","to":"mission_find_xingchao"}
