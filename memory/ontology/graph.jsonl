@@ -119,3 +119,11 @@
 {"op":"relate","from":"scene_ch032","rel":"features","to":"char_yuan2"}
 {"op":"relate","from":"scene_ch032","rel":"involves","to":"char_shenjian"}
 {"op":"relate","from":"char_shenling","rel":"father_of","to":"char_shenjian"}
+{"op":"create","entity":{"id":"scene_ch037","type":"Scene","properties":{"chapter":37,"title":"呼唤","location":"新生据点/意识空间/世界的尽头","status":"completed"}}}
+{"op":"create","entity":{"id":"entity_observer","type":"Entity","properties":{"name":"观测者","type":"古老存在","status":"苏醒/观察中","threat":"EXTREME","description":"世界尽头最古老的生命，以意识为食，从未有过朋友，对新生产生兴趣"}}}
+{"op":"create","entity":{"id":"entity_xinsheng_mark","type":"Entity","properties":{"name":"新生印记","type":"光之印记","owner":"新生","from_entity":"林远山","property":"藏不住的古老之光","status":"激活中"}}}
+{"op":"create","entity":{"id":"relation_xinsheng_observer_friendship","type":"Relation","properties":{"type":"友谊？","from":"新生","to":"观测者","note":"新生以为观测者是朋友，观测者实际把新生视为猎物/种子","status":"危险"}}}
+{"op":"relate","from":"scene_ch037","rel":"features","to":"entity_observer"}
+{"op":"relate","from":"scene_ch037","rel":"features","to":"entity_xinsheng_mark"}
+{"op":"relate","from":"scene_ch037","rel":"features","to":"relation_xinsheng_observer_friendship"}
+{"op":"relate","from":"entity_observer","rel":"observes","to":"char_xinsheng"}
