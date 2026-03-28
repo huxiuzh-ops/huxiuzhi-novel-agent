@@ -104,3 +104,7 @@
 {"op":"relate","from":"scene_ch010","rel":"features","to":"entity_star_nest"}
 {"op":"relate","from":"scene_ch010","rel":"features","to":"entity_guardian_t2"}
 {"op":"relate","from":"char_linxue","rel":"rescued_in","to":"scene_ch010"}
+{"op":"upsert","entity":"scene_ch025","type":"Scene","props":{"title":"纽带","chapter":25,"volume":"乱世","summary":"林雪成功联系T2智慧体建立同盟；T2代表星火入驻新生据点；原一提前三天发动进攻；揭露孩子体内蕴含T3全部力量；林雪和孩子撤离；陈末率众誓死守卫拖延T2援军到达"}}
+{"op":"upsert","entity":"entity_spark","type":"Person","props":{"name":"星火","role":"T2智慧体联络员","appearance":"眼睛深红色，和陈末相似","note":"T2最年轻也是最聪明的代表，父亲被原生体所杀"}}
+{"op":"relate","from":"scene_ch025","rel":"features","to":"entity_spark"}
+{"op":"relate","from":"entity_spark","rel":"contacts","to":"scene_ch025"}
