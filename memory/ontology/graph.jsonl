@@ -127,3 +127,15 @@
 {"op":"relate","from":"scene_ch037","rel":"features","to":"entity_xinsheng_mark"}
 {"op":"relate","from":"scene_ch037","rel":"features","to":"relation_xinsheng_observer_friendship"}
 {"op":"relate","from":"entity_observer","rel":"observes","to":"char_xinsheng"}
+{"op":"create","entity":{"id":"scene_ch039","type":"Scene","properties":{"chapter":39,"title":"选择","location":"新生据点/意识空间（星空）","status":"completed","summary":"新生日渐强大的感知能力已经超越人类极限；观测者向新生展示星空（它眼中的宇宙）；新生面临重大选择：成为观测者一样的存在（永生）还是继续做人类；新生选择继续做妈妈的女儿；观测者第一次开始思考自身存在"}}}
+{"op":"create","entity":{"id":"entity_xinsheng_godlike_perception","type":"Ability","properties":{"name":"神级感知","owner":"新生","description":"能感知整个城市的生命波动，超出正常人类一千倍","chapter_introduced":39,"status":"快速成长中"}}}
+{"op":"create","entity":{"id":"entity_observer_starfield","type":"Entity","properties":{"name":"观测者的星空","type":"空间","owner":"观测者","description":"观测者眼中的宇宙，所有有意识的存在都是光点","chapter_introduced":39}}}
+{"op":"create","entity":{"id":"choice_xinsheng_fate","type":"Choice","properties":{"owner":"新生","option_a":"成为观测者一样的存在（永生、神级能力）","option_b":"继续做人类（有限的生命）","chapter":39,"status":"option_b_selected","note":"新生选择继续做妈妈的女儿：'哪怕只能活一百年，我也愿意'"}}}
+{"op":"create","entity":{"id":"relation_xinsheng_observer_deep","type":"Relation","properties":{"type":"深度友谊","from":"新生","to":"观测者","note":"新生把观测者当最好的朋友；观测者第一次开始思考自身，想要得到无条件的爱","status":"深化中"}}}
+{"op":"relate","from":"scene_ch039","rel":"features","to":"entity_xinsheng_godlike_perception"}
+{"op":"relate","from":"scene_ch039","rel":"features","to":"entity_observer_starfield"}
+{"op":"relate","from":"scene_ch039","rel":"features","to":"choice_xinsheng_fate"}
+{"op":"relate","from":"scene_ch039","rel":"features","to":"relation_xinsheng_observer_deep"}
+{"op":"relate","from":"entity_observer","rel":"playing_hide_seek_with","to":"char_xinsheng"}
+{"op":"create","entity":{"id":"char_xinsheng","type":"Character","properties":{"name":"新生","role":"特殊存在/陈末养女","status":"alive","location":"新生据点","age_appearance":"5-6岁","new_ability":"神级感知能力（超出人类一千倍）","hair":"有几缕变成银白色","forehead_mark":"印记发光，越来越亮","status":"选择继续做人类"}}}
+{"op":"create","entity":{"id":"entity_xinsheng_choice_guardian","type":"Choice","properties":{"name":"新生选择成为守护者","owner":"新生","note":"能力越强，责任越大。新生承诺要保护所有漂亮的光点，不想让它们消失","chapter":39,"status":"declared"}}}
