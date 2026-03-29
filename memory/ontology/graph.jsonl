@@ -154,3 +154,16 @@
 {"op":"relate","from":"scene_ch040","rel":"features","to":"relation_three_factions_united"}
 {"op":"relate","from":"entity_observer_descendant_7","rel":"represents","to":"faction_observer_descendants"}
 {"op":"relate","from":"entity_observer","rel":"trusts","to":"char_xinsheng"}}
+{"op":"create","entity":{"id":"scene_ch041","type":"Scene","properties":{"chapter":41,"title":"降临","location":"守望据点/江城天空","status":"completed","key_event":"吞噬者降临·三方联合备战·新生发出守护呼唤"}}}
+{"op":"create","entity":{"id":"entity_devourer","type":"Entity","properties":{"name":"吞噬者","alignment":"evil","threat":"APOCALYPTIC","status":"降临中","location":"接近江城","ability":"扭曲空间·吞噬意识·让被吞噬者永远困在体内"}}}
+{"op":"create","entity":{"id":"entity_devourer_subordinates","type":"Entity","properties":{"name":"吞噬者子民","type":"被吞噬的意识","count":"无数","status":"随吞噬者行动","threat":"EXTREME"}}}
+{"op":"create","entity":{"id":"fact_devourer_approaching","type":"Fact","properties":{"content":"吞噬者的影子已笼罩整个江城，距离约300公里，它能扭曲空间，每一步跨越极远距离"}}}
+{"op":"create","entity":{"id":"fact_devourer_noticed_xinsheng","type":"Fact","properties":{"content":"吞噬者发现了新生，对她特别感兴趣，因为她是两个世界的桥梁，它想吃掉她"}}}
+{"op":"create","entity":{"id":"relation_xinsheng_call","type":"Relation","properties":{"from":"char_xinsheng","to":"all_three_factions","type":"呼唤·号召联合"}}}
+{"op":"create","entity":{"id":"fact_hope_cannot_be_devoured","type":"Fact","properties":{"content":"观测者第一次感受到希望的力量——希望是任何黑暗都吞噬不了的东西"}}}
+{"op":"relate","from":"scene_ch041","rel":"features","to":"entity_devourer"}
+{"op":"relate","from":"scene_ch041","rel":"features","to":"entity_devourer_subordinates"}
+{"op":"relate","from":"scene_ch041","rel":"features","to":"fact_devourer_approaching"}
+{"op":"relate","from":"scene_ch041","rel":"features","to":"fact_devourer_noticed_xinsheng"}
+{"op":"relate","from":"scene_ch041","rel":"features","to":"relation_xinsheng_call"}
+{"op":"relate","from":"scene_ch041","rel":"features","to":"fact_hope_cannot_be_devoured"}
