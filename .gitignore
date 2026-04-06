@@ -32,3 +32,11 @@ node_modules/
 dist/
 build/
 *.egg-info/
+
+# Downloaded skills (install separately)
+skills/ui-ux-pro-max/
+*.zip
+
+# Build scripts (one-off)
+scripts/build_ui.js
+scripts/check_ui.js
