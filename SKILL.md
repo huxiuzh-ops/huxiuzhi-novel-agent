@@ -34,6 +34,8 @@
 | 审稿/检查 | 「审一下稿」「检查一致性」「有没有错」 | Editor Agent |
 | 新增/修改设定 | 「新增一个角色」「修改世界观」「势力变了」 | World Agent |
 | 查询 | 「第三章用的什么武器」「这个人多大了」 | KB 查询 |
+| 反馈/纠正 | 「这里写得不对」「应该更冷静」「之前纠正过了」 | 自我进化模块 |
+| 知识图谱查询 | 「这个角色出现在哪些场景」「某章的时间线」 | Ontology 查询 |
 | 配置 | 「改成全自动」「换叙事框架」「修改自主程度」 | 配置模块 |
 | 闲聊 | 打招呼、问 Agent 状态等 | 日常对话（不做写作处理） |
 
@@ -120,6 +122,11 @@
 - 文笔反馈（段落平均长度、对话密度、情绪曲线）
 - 通过/打回决定
 
+**完成审稿后**：
+- 更新 beats/TRACKING.md（伏笔状态变更）
+- 追加 scene 到 memory/ontology/graph.jsonl（如有新增场景）
+- 如发现新问题，追加到 .learnings/
+
 **一致性检查调用脚本**：`scripts/consistency_check.py`
 
 **伏笔追踪调用脚本**：`scripts/beat_tracker.py`
@@ -159,7 +166,17 @@ workspace/
 │   └── foreshadowing.jsonl
 ├── chapters/            ← 章节正文（用户填入）
 ├── inventory/           ← 装备/道具表（可选）
-└── style_guide.md       ← 写作风格偏好
+├── style_guide.md       ← 写作风格偏好
+│
+├── memory/              ← 知识图谱（自动维护）
+│   └── ontology/
+│       ├── schema.yaml   ← 实体类型定义
+│       └── graph.jsonl   ← 实体记录（append-only）
+│
+└── .learnings/         ← 自我进化记忆（自动维护）
+    ├── LEARNINGS.md     ← 被纠正的写法/规范
+    ├── ERRORS.md         ← 工具错误记录
+    └── FEATURE_REQUESTS.md ← 新功能请求
 ```
 
 ### world.md 模板结构
@@ -295,7 +312,95 @@ Scripts 是用代码实现的验证逻辑，比提示词更可靠。
 
 ---
 
-## 九、错误处理
+## 九、知识图谱（Ontology）
+
+每次完成重要操作后，自动将信息追加到 `memory/ontology/graph.jsonl`。
+
+### 何时更新
+
+- **写完一章** → 提取场景信息，记录地点、时间、人物、情绪
+- **新增角色** → 登记角色实体
+- **新增势力** → 登记势力实体
+- **新增地点** → 登记地点实体
+- **埋入伏笔** → 登记 PlotBeat 实体
+- **回收伏笔** → 更新 PlotBeat 状态
+
+### 记录格式（JSONL，一行一条）
+
+```json
+{"type":"Scene","id":"scene-ch003-01","chapter":"ch003","title":"场景标题","summary":"场景摘要","location":"loc-xxx","time":"末世第三年·清晨","keyEntities":["char-chenmo"],"mood":"紧张","plotFunction":"development","created":"2026-04-06T10:00:00+08:00"}
+{"type":"PlotBeat","id":"beat-001","subtype":"foreshadow","plantedChapter":"ch003","plannedChapter":"ch010","status":"pending","description":"伏笔描述","triggerCondition":"触发条件","created":"2026-04-06T10:00:00+08:00"}
+```
+
+### Schema 定义
+
+详见 `memory/ontology/schema.yaml`
+
+### 查询知识图谱
+
+- 按 `type` 过滤：查找所有角色 / 所有场景
+- 按 `chapter` 排序：获取故事时间线
+- 按 `status=pending` 筛选：获取未回收的伏笔
+- 按 `keyEntities` 查找：某角色出现在哪些场景
+
+---
+
+## 十、自我进化（Self-Improvement）
+
+每次用户纠正你的写法、指出错误，或者你自己发现更好的做法，记录到 `.learnings/`。
+
+### 触发时机
+
+1. 用户直接纠正：「这里写得不对，应该……」
+2. 用户审稿后提出问题：「这个角色的性格不对」
+3. 工具执行失败：报错信息记录到 ERRORS.md
+4. 用户请求不存在的能力：记录到 FEATURE_REQUESTS.md
+5. 自己发现更好做法：在 LEARNINGS.md 自省
+
+### 记录格式
+
+详见 `.learnings/` 目录下的三个文件：
+- `LEARNINGS.md` — 学到的写法/规范
+- `ERRORS.md` — 工具错误记录
+- `FEATURE_REQUESTS.md` — 新功能请求
+
+### 自我修正流程
+
+```
+用户纠正反馈
+    ↓
+识别问题类型（风格/一致性/节奏/角色/工具）
+    ↓
+写入 .learnings/ 对应文件
+    ↓
+如果涉及设定修改 → 更新 world.md / characters/ / style_guide.md
+    ↓
+Supervisor 记住这个修正
+    ↓
+Writer Agent 写之前先读 .learnings/ 和更新后的文件
+```
+
+### 自省提醒
+
+每次开始新任务前，检查 `.learnings/` 中标记为 `pending` 的条目，
+确保本次写作不重复同样的错误。
+
+---
+
+## 十一、Scripts（通用硬约束）
+
+Scripts 是用代码实现的验证逻辑，比提示词更可靠。
+
+| 脚本 | 作用 |
+|------|------|
+| `consistency_check.py` | 读取 world.md 和 characters/，检测参数矛盾 |
+| `beat_tracker.py` | 读取 beats/，检查伏笔状态，标记逾期 |
+| `context_compressor.py` | 压缩超长上下文，防窗口溢出 |
+| `outline_generator.py` | 根据叙事框架生成分卷/章节骨架 |
+
+---
+
+## 十二、错误处理
 
 | 错误类型 | 处理方式 |
 |---------|---------|
@@ -304,9 +409,11 @@ Scripts 是用代码实现的验证逻辑，比提示词更可靠。
 | 一致性检查失败 | Editor Agent 列出冲突项，等待修正 |
 | 上下文超限 | 触发 context_compressor.py |
 | Sub-Agent 超时 | 最多重试 2 次，仍失败则 Supervisor 上报 |
+| 工具执行报错 | 记录到 .learnings/ERRORS.md，尝试降级方案 |
 
 ---
 
-## 十、版本
+## 版本
 
+- v1.0.1 (2026-04-06) — 新增知识图谱（ontology）和自我进化（self-improvement）机制
 - v1.0.0 (2026-04-06) — 初始版本

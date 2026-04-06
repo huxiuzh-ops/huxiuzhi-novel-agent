@@ -1,0 +1,118 @@
+# ontology schema
+
+> novel-agent 的知识图谱 schema。定义实体类型和关系约束。
+
+---
+
+## 支持的实体类型
+
+### Character（角色）
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | string | ✅ | 固定值 "Character" |
+| id | string | ✅ | 唯一标识，格式：char-{name_pinyin} |
+| name | string | ✅ | 角色名称 |
+| role | enum | ✅ | protagonist / antagonist / supporting / minor |
+| status | enum | ✅ | alive / dead / unknown |
+| age | number | ❌ | 年龄 |
+| faction | string | ❌ | 所属势力 |
+| firstAppearance | string | ❌ | 首次出现章节 |
+| keyTraits | string[] | ❌ | 关键性格特征 |
+| motivation | string | ❌ | 核心动机 |
+
+### Faction（势力）
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | string | ✅ | 固定值 "Faction" |
+| id | string | ✅ | 唯一标识，格式：fac-{name_pinyin} |
+| name | string | ✅ | 势力名称 |
+| influence | enum | ❌ | dominant / strong / moderate / weak |
+| alignedWith | string[] | ❌ | 友好势力 ID |
+| opposedBy | string[] | ❌ | 敌对势力 ID |
+
+### Location（地点）
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | string | ✅ | 固定值 "Location" |
+| id | string | ✅ | 唯一标识，格式：loc-{name_pinyin} |
+| name | string | ✅ | 地点名称 |
+| region | string | ❌ | 所属区域 |
+| firstAppearance | string | ❌ | 首次出现章节 |
+
+### Scene（场景）
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | string | ✅ | 固定值 "Scene" |
+| id | string | ✅ | 唯一标识，格式：scene-{chXXX}-{seq} |
+| chapter | string | ✅ | 所属章节 |
+| title | string | ✅ | 场景标题 |
+| summary | string | ✅ | 场景摘要（1-2句话） |
+| location | string | ✅ | 地点 ID（引用 Location） |
+| time | string | ❌ | 时间描述 |
+| keyEntities | string[] | ✅ | 涉及的角色 ID 列表 |
+| mood | string | ❌ | 情绪基调 |
+| plotFunction | enum | ❌ | setup / development / climax / resolution |
+| created | string | ✅ | 创建时间 ISO-8601 |
+
+### PlotBeat（剧情点）
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | string | ✅ | 固定值 "PlotBeat" |
+| id | string | ✅ | 唯一标识，格式：beat-{id} |
+| subtype | enum | ✅ | foreshadow / reveal / climax / resolution |
+| plantedChapter | string | ✅ | 埋入章节 |
+| plannedChapter | string | ❌ | 计划回收章节 |
+| actualChapter | string | ❌ | 实际回收章节 |
+| status | enum | ✅ | pending / triggered / resolved |
+| description | string | ✅ | 伏笔描述 |
+| triggerCondition | string | ❌ | 触发条件 |
+| created | string | ✅ | 创建时间 |
+
+### Item（道具/装备）
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | string | ✅ | 固定值 "Item" |
+| id | string | ✅ | 唯一标识 |
+| name | string | ✅ | 道具名称 |
+| category | enum | ❌ | weapon / consumable / tool / intel |
+| specs | map | ❌ | 关键参数（射程/威力等） |
+| owner | string | ❌ | 当前持有者 ID |
+
+---
+
+## 关系类型
+
+| 关系 | 从 | 到 | 说明 |
+|------|----|----|------|
+| belongs_to | Character | Faction | 角色属于某势力 |
+| allies_with | Character | Character | 角色间结盟 |
+| opposes | Character | Character | 角色间对立 |
+| parent_of | Character | Character | 角色间亲属关系 |
+| controls | Faction | Location | 势力控制某地点 |
+| rivals | Faction | Faction | 势力间竞争 |
+| appears_in | Character | Scene | 角色出现在某场景 |
+| set_in | Scene | Location | 场景发生在某地点 |
+| triggers | PlotBeat | Scene | 伏笔在某场景被触发 |
+
+---
+
+## 追加规则
+
+1. **每次写入新增一条 JSON**，不修改已有行
+2. **ID 全局唯一**，重复写入同一 ID 视为更新（追加新行 + 旧行标记为 superseded）
+3. **时间戳必填**，使用 ISO-8601 格式
+
+---
+
+## 查询建议
+
+- 按 `type` 过滤实体类型
+- 按 `chapter` 或 `firstAppearance` 查找某章出现的内容
+- 按 `status` 筛选 pending 伏笔
+- Scene 按 `chapter` + `id` 排序获取时间线

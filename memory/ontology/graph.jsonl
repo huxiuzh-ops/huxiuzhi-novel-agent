@@ -1,0 +1,6 @@
+{"type":"Character","id":"char-example","name":"示例角色","role":"protagonist","status":"alive","age":28,"faction":"fac-example","firstAppearance":"ch001","keyTraits":["冷静","理性","护短"],"motivation":"保护家人","created":"2026-04-06T00:00:00+08:00"}
+{"type":"Faction","id":"fac-example","name":"示例势力","influence":"moderate","alignedWith":[],"opposedBy":[],"created":"2026-04-06T00:00:00+08:00"}
+{"type":"Location","id":"loc-example","name":"示例地点","region":"旧世界","firstAppearance":"ch001","created":"2026-04-06T00:00:00+08:00"}
+{"type":"Scene","id":"scene-ch001-01","chapter":"ch001","title":"示例场景","summary":"主角在末世中醒来，第一次遭遇危机","location":"loc-example","time":"末世第三年·清晨","keyEntities":["char-example"],"mood":"紧张","plotFunction":"setup","created":"2026-04-06T00:00:00+08:00"}
+{"type":"PlotBeat","id":"beat-001","subtype":"foreshadow","plantedChapter":"ch001","plannedChapter":"ch010","status":"pending","description":"示例伏笔：某角色的真实身份","triggerCondition":"与神秘人物对话时触发","created":"2026-04-06T00:00:00+08:00"}
+{"type":"Item","id":"item-example","name":"示例武器","category":"weapon","specs":{"射程":"100米","威力":"高","弹药":"无限"},"owner":"char-example","created":"2026-04-06T00:00:00+08:00"}
