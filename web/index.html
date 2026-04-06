@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>novel-agent Dashboard</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    :root{--bg:#0f172a;--sidebar:#1e293b;--card:#1e293b;--border:#334155;--text:#e2e8f0;--text-dim:#94a3b8;--accent:#38bdf8;--green:#4ade80;--yellow:#fbbf24;--red:#f87171;--purple:#c084fc;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;overflow:hidden;}
+    .sidebar{width:220px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
+    .sidebar-header{padding:20px 16px;border-bottom:1px solid var(--border);}
+    .sidebar-header h1{font-size:15px;font-weight:700;color:var(--accent);letter-spacing:0.5px;}
+    .sidebar-header .subtitle{font-size:11px;color:var(--text-dim);margin-top:4px;}
+    .sidebar nav{flex:1;overflow-y:auto;padding:8px 0;}
+    .nav-item{padding:10px 16px;cursor:pointer;font-size:13px;color:var(--text-dim);display:flex;align-items:center;gap:8px;transition:background 0.15s,color 0.15s;border-left:3px solid transparent;}
+    .nav-item:hover{background:rgba(255,255,255,0.05);color:var(--text);}
+    .nav-item.active{background:rgba(56,189,248,0.1);color:var(--accent);border-left-color:var(--accent);}
+    .nav-section{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);padding:12px 16px 4px;}
+    .main{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+    .topbar{padding:16px 24px;border-bottom:1px solid var(--border);}
+    .topbar h2{font-size:16px;font-weight:600;}
+    .content{padding:24px;flex:1;}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;}
+    .card h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:12px;}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+    .stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;}
+    .stat-card .label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;}
+    .stat-card .value{font-size:28px;font-weight:700;color:var(--accent);margin-top:4px;}
+    .stat-card .sub{font-size:11px;color:var(--text-dim);margin-top:2px;}
+    .chapter-list{display:flex;flex-direction:column;gap:4px;}
+    .chapter-item{padding:10px 14px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background 0.15s;}
+    .chapter-item:hover{background:rgba(255,255,255,0.05);}
+    .chapter-item .ch-num{font-weight:600;color:var(--accent);width:60px;}
+    .chapter-item .ch-title{flex:1;font-size:13px;}
+    .chapter-item .ch-words{font-size:11px;color:var(--text-dim);}
+    .beat-table{width:100%;border-collapse:collapse;font-size:13px;}
+    .beat-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);padding:8px 12px;border-bottom:1px solid var(--border);}
+    .beat-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.04);}
+    .beat-table tr:hover td{background:rgba(255,255,255,0.02);}
+    .beat-status{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}
+    .status-pending{background:rgba(251,191,36,0.15);color:var(--yellow);}
+    .status-overdue{background:rgba(248,113,113,0.15);color:var(--red);}
+    .status-resolved{background:rgba(74,222,128,0.15);color:var(--green);}
+    .char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;}
+    .char-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:14px;}
+    .char-card .name{font-size:15px;font-weight:700;margin-bottom:4px;}
+    .char-card .role-badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;}
+    .role-protagonist{background:rgba(56,189,248,0.15);color:var(--accent);}
+    .role-antagonist{background:rgba(248,113,113,0.15);color:var(--red);}
+    .role-supporting{background:rgba(192,132,252,0.15);color:var(--purple);}
+    .char-card .field{font-size:12px;color:var(--text-dim);margin-bottom:2px;}
+    .char-card .field span{color:var(--text);}
+    .btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:opacity 0.15s;}
+    .btn:hover{opacity:0.85;}
+    .btn-primary{background:var(--accent);color:#0f172a;}
+    .btn-danger{background:rgba(248,113,113,0.2);color:var(--red);border:1px solid rgba(248,113,113,0.3);}
+    .btn-row{display:flex;gap:8px;margin-bottom:16px;}
+    .script-output{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:16px;font-family:'Courier New',monospace;font-size:12px;color:#e6e6e6;white-space:pre-wrap;min-height:80px;max-height:400px;overflow-y:auto;display:none;}
+    .script-output.show{display:block;}
+    .output-warning{color:var(--yellow);}
+    .output-error{color:var(--red);}
+    .output-success{color:var(--green);}
+    .md-content{font-size:14px;line-height:1.8;max-width:720px;}
+    .md-content h1{font-size:22px;margin:24px 0 12px;border-bottom:1px solid var(--border);padding-bottom:8px;}
+    .md-content h2{font-size:18px;margin:20px 0 10px;}
+    .md-content h3{font-size:15px;margin:16px 0 8px;color:var(--accent);}
+    .md-content p{margin-bottom:12px;}
+    .md-content table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+    .md-content th,.md-content td{border:1px solid var(--border);padding:8px 12px;font-size:13px;}
+    .md-content th{background:rgba(255,255,255,0.05);}
+    .md-content code{background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-size:12px;}
+    .md-content pre{background:#0d1117;padding:14px;border-radius:8px;overflow-x:auto;margin-bottom:16px;}
+    .md-content blockquote{border-left:3px solid var(--accent);padding-left:14px;color:var(--text-dim);margin-bottom:12px;}
+    .md-content ul,.md-content ol{padding-left:20px;margin-bottom:12px;}
+    .md-content li{margin-bottom:4px;}
+    .section-view{display:none;}
+    .section-view.active{display:block;}
+    .loading{color:var(--text-dim);font-size:13px;padding:20px;text-align:center;}
+    .error-msg{color:var(--red);font-size:13px;padding:12px;background:rgba(248,113,113,0.1);border-radius:8px;}
+    .intro-card{background:linear-gradient(135deg,rgba(56,189,248,0.08),rgba(192,132,252,0.08));border:1px solid rgba(56,189,248,0.2);border-radius:12px;padding:24px;margin-bottom:24px;}
+    .intro-card h2{color:var(--accent);margin-bottom:8px;font-size:18px;}
+    .intro-card p{color:var(--text-dim);font-size:13px;line-height:1.6;}
+    .quick-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+    .quick-links button{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--accent);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;}
+    .quick-links button:hover{background:rgba(56,189,248,0.2);}
+    .empty-state{text-align:center;padding:40px;color:var(--text-dim);font-size:13px;}
+    #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center;padding:24px;}
+    .modal-box{background:var(--card);border:1px solid var(--border);border-radius:12px;width:100%;max-width:800px;max-height:85vh;display:flex;flex-direction:column;}
+    .modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+    .modal-header h3{font-size:15px;}
+    .modal-close{background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;padding:4px 8px;}
+    .modal-body{padding:20px;overflow-y:auto;flex:1;}
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>novel-agent</h1>
+    <div class="subtitle">小说协作工作台</div>
+  </div>
+  <nav>
+    <div class="nav-section">总览</div>
+    <div class="nav-item active" data-view="dashboard">📊 仪表盘</div>
+    <div class="nav-section">章节</div>
+    <div class="nav-item" data-view="chapters">📖 章节列表</div>
+    <div class="nav-section">内容</div>
+    <div class="nav-item" data-view="beats">🔮 伏笔追踪</div>
+    <div class="nav-item" data-view="characters">👤 角色档案</div>
+    <div class="nav-item" data-view="world">🌍 世界设定</div>
+    <div class="nav-item" data-view="style">✏️ 写作风格</div>
+    <div class="nav-section">工具</div>
+    <div class="nav-item" data-view="tools">🛠️ 检查工具</div>
+  </nav>
+</div>
+
+<div class="main">
+  <div class="topbar"><h2 id="view-title">仪表盘</h2></div>
+  <div class="content">
+
+    <div class="section-view active" id="view-dashboard">
+      <div class="intro-card">
+        <h2>欢迎使用 novel-agent</h2>
+        <p>AI 辅助长篇小说写作框架。<br>左侧导航浏览章节、角色、伏笔；工具页面可运行一致性检查。<br><strong style="color:var(--yellow)">运行检查工具前，需先在终端启动 Python 服务器：</strong></p>
+        <pre style="background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Courier New',monospace;font-size:12px;color:#e6e6e6;margin-top:8px;white-space:pre-wrap">cd novel-agent
+python server.py</pre>
+        <div class="quick-links">
+          <button onclick="navTo('chapters')">📖 浏览章节</button>
+          <button onclick="navTo('beats')">🔮 伏笔状态</button>
+          <button onclick="navTo('characters')">👤 角色</button>
+        </div>
+      </div>
+      <div class="stats-grid" id="stats-grid"><div class="loading">加载中...</div></div>
+      <div class="card"><h3>⚠️ 逾期伏笔</h3><div id="overdue-beats"><div class="loading">加载中...</div></div></div>
+      <div class="card"><h3>📖 最近章节</h3><div class="chapter-list" id="recent-chapters"><div class="loading">加载中...</div></div></div>
+    </div>
+
+    <div class="section-view" id="view-chapters">
+      <div class="btn-row"><button class="btn btn-primary" onclick="loadChapters()">🔄 刷新</button></div>
+      <div class="chapter-list" id="all-chapters"><div class="loading">加载中...</div></div>
+    </div>
+
+    <div class="section-view" id="view-beats">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="runBeatCheck()">▶️ 更新状态</button>
+        <button class="btn btn-danger" onclick="exportBeats()">📥 导出 CSV</button>
+      </div>
+      <div class="card">
+        <table class="beat-table">
+          <thead><tr><th>ID</th><th>类型</th><th>内容</th><th>埋入</th><th>计划</th><th>状态</th></tr></thead>
+          <tbody id="beats-tbody"><tr><td colspan="6" class="loading">加载中...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section-view" id="view-characters">
+      <div class="char-grid" id="char-grid"><div class="loading">加载中...</div></div>
+    </div>
+
+    <div class="section-view" id="view-world">
+      <div class="card"><div class="md-content" id="world-content"><div class="loading">加载中...</div></div></div>
+    </div>
+
+    <div class="section-view" id="view-style">
+      <div class="card"><div class="md-content" id="style-content"><div class="loading">加载中...</div></div></div>
+    </div>
+
+    <div class="section-view" id="view-tools">
+      <div class="card">
+        <h3>🛠️ 一致性检查</h3>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">检测角色/武器/时间线矛盾。<strong style="color:var(--yellow)">需先启动 Python 服务器。</strong></p>
+        <div class="btn-row"><button class="btn btn-primary" onclick="runConsistencyCheck()">▶️ 运行检查</button></div>
+        <div class="script-output" id="consistency-output">点击上方按钮运行...</div>
+      </div>
+      <div class="card">
+        <h3>🔮 伏笔追踪</h3>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">检查伏笔回收状态，标记逾期项。<strong style="color:var(--yellow)">需先启动 Python 服务器。</strong></p>
+        <div class="btn-row"><button class="btn btn-primary" onclick="runBeatCheck()">▶️ 更新状态</button></div>
+        <div class="script-output" id="beat-output">点击上方按钮运行...</div>
+      </div>
+      <div class="card">
+        <h3>🧠 知识图谱</h3>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">memory/ontology/graph.jsonl 实体统计。</p>
+        <div id="ontology-stats"><div class="loading">加载中...</div></div>
+      </div>
+      <div class="card">
+        <h3>📡 启动服务器</h3>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">在终端运行以下命令，然后刷新此页面：</p>
+        <pre style="background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:14px;font-family:'Courier New',monospace;font-size:12px;color:#e6e6e6;white-space:pre-wrap">cd C:\path\to\novel-agent
+python server.py</pre>
+        <p style="font-size:12px;color:var(--text-dim);margin-top:8px;">服务器地址：http://localhost:8765</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center;padding:24px;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;width:100%;max-width:800px;max-height:85vh;display:flex;flex-direction:column;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <h3 id="modal-title" style="font-size:15px;"></h3>
+      <button onclick="closeModal()" style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <div id="modal-body" style="padding:20px;overflow-y:auto;flex:1;"></div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8765';
+
+async function api(path) {
+  try { const r = await fetch(API + path); return r.ok ? r.json() : null; } catch { return null; }
+}
+async function apiText(path) {
+  try { const r = await fetch(API + path); return r.ok ? r.text() : null; } catch { return null; }
+}
+
+function navTo(v) {
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.section-view').forEach(s=>s.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.getElementById('view-title').textContent = v;
+  if(v==='dashboard') loadDash();
+  if(v==='chapters') loadChapters();
+  if(v==='beats') loadBeats();
+  if(v==='characters') loadChars();
+  if(v==='world') loadWorld();
+  if(v==='style') loadStyle();
+  if(v==='tools') loadTools();
+}
+
+document.querySelectorAll('.nav-item').forEach(el => el.addEventListener('click', () => navTo(el.dataset.view)));
+
+function parseMd(t) {
+  if(!t) return '<p class="error-msg">文件为空</p>';
+  t = t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  t = t.replace(/```[\s\S]*?```/g,m=>'<pre><code>'+m.slice(3,-3).replace(/^\w*\n/,'')+'</code></pre>');
+  t = t.replace(/`([^`]+)`/g,'<code>$1</code>');
+  t = t.replace(/\n\n\|(.+)\n\|[-| :]+\n((?:\|.+\n?)*)/g,(_,h,b)=>{
+    const hs=h.split('|').map(x=>x.trim()).filter(Boolean);
+    const rs=b.trim().split('\n').map(r=>r.split('|').map(c=>c.trim()).filter(Boolean));
+    let x='<table><thead><tr>'+hs.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>';
+    rs.forEach(r=>{ x+='<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>'; });
+    return x+'</tbody></table>';
+  });
+  t = t.replace(/^###### (.+)$/gm,'<h3>$1</h3>');
+  t = t.replace(/^##### (.+)$/gm,'<h3>$1</h3>');
+  t = t.replace(/^#### (.+)$/gm,'<h3>$1</h3>');
+  t = t.replace(/^### (.+)$/gm,'<h2>$1</h2>');
+  t = t.replace(/^## (.+)$/gm,'<h2>$1</h2>');
+  t = t.replace(/^# (.+)$/gm,'<h1>$1</h1>');
+  t = t.replace(/^> (.+)$/gm,'<blockquote>$1</blockquote>');
+  t = t.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  t = t.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  t = t.replace(/^- (.+)$/gm,'<li>$1</li>');
+  t = t.replace(/(<li>[\s\S]*?<\/li>)/g,'<ul>$1</ul>');
+  t = t.replace(/\n\n/g,'</p><p>');
+  t = t.replace(/^(?!<[hupbtl])(.+)$/gm,'<p>$1</p>');
+  return t.replace(/<p>\s*<\/p>/g,'');
+}
+
+async function loadDash() {
+  const s=document.getElementById('stats-grid'), o=document.getElementById('overdue-beats'), r=document.getElementById('recent-chapters');
+  const d=await api('/stats');
+  if(d){ s.innerHTML=`<div class="stat-card"><div class="label">章节</div><div class="value">${d.chapterCount||0}</div><div class="sub">${((d.totalWords||0)/10000).toFixed(1)}万字</div></div><div class="stat-card"><div class="label">伏笔</div><div class="value">${d.beatCount||0}</div><div class="sub">${d.resolvedBeats||0} 已回收</div></div><div class="stat-card"><div class="label">角色</div><div class="value">${d.charCount||0}</div><div class="sub">${d.activeChars||0} 在世</div></div><div class="stat-card"><div class="label">逾期</div><div class="value" style="color:${(d.overdueBeats||0)>0?'var(--red)':'var(--green)'}">${d.overdueBeats||0}</div><div class="sub">需关注</div></div>`; } else { s.innerHTML='<div class="error-msg">请启动 Python 服务器后刷新</div>'; }
+  const b=await api('/beats');
+  if(b){
+    const ov=b.filter(x=>x.status==='overdue');
+    o.innerHTML=ov.length===0 ? '<span style="color:var(--green);font-size:13px">✅ 暂无逾期伏笔</span>' : '<ul>'+ov.map(x=>`<li style="margin-bottom:8px;font-size:13px"><span class="beat-status status-overdue">逾期</span> <strong>${x.id}</strong>: ${(x.description||'').slice(0,50)} <span style="color:var(--text-dim)">（ch${x.plannedChapter}）</span></li>`).join('')+'</ul>';
+  } else { o.innerHTML='<div class="error-msg">请启动 Python 服务器</div>'; }
+  const c=await api('/chapters');
+  if(c){
+    r.innerHTML=c.slice(-5).reverse().map(ch=>`<div class="chapter-item" onclick="openChapter('${ch.file}')"><span class="ch-num">${ch.num}</span><span class="ch-title">${ch.title||'无标题'}</span><span class="ch-words">${ch.words||0}字</span></div>`).join('');
+  } else { r.innerHTML='<div class="error-msg">无法加载章节</div>'; }
+}
+
+async function loadChapters() {
+  const el=document.getElementById('all-chapters');
+  el.innerHTML='<div class="loading">加载中...</div>';
+  const c=await api('/chapters');
+  el.innerHTML=c&&c.length>0 ? c.map(ch=>`<div class="chapter-item" onclick="openChapter('${ch.file}')"><span class="ch-num">${ch.num}</span><span class="ch-title">${ch.title||'无标题'}</span><span class="ch-words">${ch.words||0}字</span></div>`).join('') : '<div class="empty-state">暂无章节</div>';
+}
+
+async function openChapter(file) {
+  const t=await apiText('/read?path='+encodeURIComponent('chapters/'+file));
+  document.getElementById('modal-title').textContent='📖 '+file;
+  document.getElementById('modal-body').innerHTML='<div class="md-content">'+parseMd(t)+'</div>';
+  document.getElementById('modal-overlay').style.display='flex';
+}
+
+async function loadBeats() {
+  const tb=document.getElementById('beats-tbody');
+  tb.innerHTML='<tr><td colspan="6" class="loading">加载中...</td></tr>';
+  const b=await api('/beats');
+  if(b){
+    tb.innerHTML=b.length===0 ? '<tr><td colspan="6" class="empty-state">暂无伏笔记录</td></tr>' : b.map(x=>{
+      const sc=x.status==='resolved'?'status-resolved':x.status==='overdue'?'status-overdue':'status-pending';
+      const sl=x.status==='resolved'?'已回收':x.status==='overdue'?'逾期':'待回收';
+      return `<tr><td><strong>${x.id}</strong></td><td>${x.type||'-'}</td><td>${(x.description||'-').slice(0,50)}</td><td>ch${x.plantedChapter||'-'}</td><td>ch${x.plannedChapter||'-'}</td><td><span class="beat-status ${sc}">${sl}</span></td></tr>`;
+    }).join('');
+  } else { tb.innerHTML='<tr><td colspan="6"><div class="error-msg">请启动 Python 服务器</div></td></tr>'; }
+}
+
+async function runBeatCheck() {
+  const o=document.getElementById('beat-output');
+  o.classList.add('show'); o.textContent='运行中...';
+  const r=await fetch(API+'/run?script=beats');
+  const t=await r.text();
+  o.innerHTML=t.split('\n').map(l=>l.includes('[WARNING]')?'<span class="output-warning">'+l+'</span>':l.includes('[ERROR]')?'<span class="output-error">'+l+'</span>':l.includes('✅')?'<span class="output-success">'+l+'</span>':l).join('\n');
+  loadBeats(); loadDash();
+}
+
+function exportBeats() {
+  const rows=document.querySelectorAll('#beats-tbody tr');
+  if(!rows.length)return;
+  let csv='ID,类型,内容,埋入,计划回收,状态\n';
+  rows.forEach(row=>{const c=row.querySelectorAll('td');if(c.length>=6){csv+=c[0].textContent.trim()+','+c[1].textContent.trim()+',"'+c[2].textContent.trim().replace(/"/g,'""')+'",'+c[3].textContent.trim()+','+c[4].textContent.trim()+','+c[5].textContent.trim()+'\n';}});
+  downloadFile('beats_export.csv',csv);
+}
+
+async function loadChars() {
+  const g=document.getElementById('char-grid');
+  g.innerHTML='<div class="loading">加载中...</div>';
+  const c=await api('/characters');
+  if(c){
+    g.innerHTML=c.length===0?'<div class="empty-state">暂无角色</div>':c.map(x=>{
+      const rc=x.role==='protagonist'?'role-protagonist':x.role==='antagonist'?'role-antagonist':'role-supporting';
+      const rl=x.role==='protagonist'?'主角':x.role==='antagonist'?'反派':'配角';
+      return `<div class="char-card"><div class="name">${x.name||'未知'}</div><span class="role-badge ${rc}">${rl}</span><div class="field">年龄：<span>${x.age||'-'}</span></div><div class="field">势力：<span>${x.faction||'-'}</span></div><div class="field">状态：<span style="color:${x.status==='alive'?'var(--green)':'var(--red)'}">${x.status==='alive'?'在世':'已故'}</span></div></div>`;
+    }).join('');
+  } else { g.innerHTML='<div class="error-msg">请启动 Python 服务器</div>'; }
+}
+
+async function loadWorld(){const e=document.getElementById('world-content');e.innerHTML='<div class="loading">加载中...</div>';const t=await apiText('/read?path='+encodeURIComponent('world.md'));e.innerHTML=parseMd(t);}
+async function loadStyle(){const e=document.getElementById('style-content');e.innerHTML='<div class="loading">加载中...</div>';const t=await apiText('/read?path='+encodeURIComponent('style_guide.md'));e.innerHTML=parseMd(t);}
+
+async function loadTools() {
+  const o=document.getElementById('ontology-stats');
+  const d=await api('/ontology');
+  if(d){
+    const types={};
+    d.forEach(e=>{ types[e.type]=(types[e.type]||0)+1; });
+    o.innerHTML=Object.entries(types).map(([t,n])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-dim)">${t}</span><span style="font-weight:600">${n}</span></div>`).join('')+`<div style="margin-top:12px;font-size:12px;color:var(--text-dim)">共 ${d.length} 条实体</div>`;
+  } else { o.innerHTML='<div class="error-msg">请启动 Python 服务器</div>'; }
+}
+
+async function runConsistencyCheck() {
+  const o=document.getElementById('consistency-output');
+  o.classList.add('show'); o.textContent='运行中...';
+  const r=await fetch(API+'/run?script=consistency');
+  const t=await r.text();
+  o.innerHTML=t.split('\n').map(l=>l.includes('[WARNING]')?'<span class="output-warning">'+l+'</span>':l.includes('[ERROR]')?'<span class="output-error">'+l+'</span>':l.includes('✅')?'<span class="output-success">'+l+'</span>':l).join('\n');
+  loadDash();
+}
+
+function closeModal(){document.getElementById('modal-overlay').style.display='none';}
+document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target.id==='modal-overlay')closeModal();});
+function downloadFile(name,content){const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(content);a.download=name;a.click();}
+
+// Init
+loadDash();
+</script>
+</body>
+</html>
