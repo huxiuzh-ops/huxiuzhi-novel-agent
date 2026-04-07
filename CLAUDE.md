@@ -1,8 +1,8 @@
 # CLAUDE.md — novel-agent · Claude Code / Codex 入口
 
 > **本文件是 Claude Code / Codex 平台的薄适配层**，它加载 `AGENT.md` 作为核心定义。
-> 
-> 所有通用的角色、任务、工作流定义，请查阅 `AGENT.md`。
+>
+> 所有通用的角色、任务，工作流定义，请查阅 `AGENT.md`。
 > 本文件只包含 Claude Code / Codex 平台特定的约定。
 
 ---
@@ -13,8 +13,11 @@
 
 1. 本文件 — 了解入口方式
 2. `AGENT.md` — 核心业务定义（必读）
-3. `config/` — 框架配置
-4. `SETUP_WIZARD.md` — 如果首次使用
+3. `AGENT_EXEC.md` — 角色执行协调器规范（必读）
+4. `config/` — 框架配置
+5. `roles/` — 5 个角色提示模板（必读，用于实际写作时）
+6. `SETUP_WIZARD.md` — 如果首次使用
+7. `docs/QUICKSTART.md` — 10 分钟快速入门
 
 ---
 
@@ -40,64 +43,138 @@ claude
 
 ---
 
-## 三、Claude Code 特有约定
+## 三、核心工作流：写章节
 
-### 3.1 工作命令
+当你说"写第8章"时，Agent 会按以下链路执行：
 
-| 你说 | Agent 做 |
-|------|---------|
-| `写第 X 章` | write_chapter workflow |
-| `审一下第 X 章` | review_chapter workflow |
-| `规划第 X 卷` | plan_volume workflow |
-| `新增角色` | World.add_character |
-| `检查一致性` | 运行 `python scripts/consistency_check.py <workspace>` |
-| `查一下这个角色` | 读 `index/characters.json` 或 `characters/*.md` |
+```
+Supervisor → Planner → Writer → Editor → Supervisor（分流）
+```
 
-### 3.2 工具使用
+**不要跳过中间步骤，直接写正文**。这样做的好处：
+- Planner 先钉住章节方向，Writer 不会跑偏
+- Editor 做一致性检查，避免前后矛盾
+- 全程有记录，出问题可回溯
 
-- **写章节**：用 `Write` / `Edit` 工具操作 `chapters/chXXX.md`
-- **更新伏笔**：用 `Edit` 追加到 `beats/TRACKING.md` 或 `index/beats.jsonl`
-- **运行脚本**：`Bash` 工具运行 `python scripts/*.py`
-- **知识图谱**：`Append` 到 `memory/ontology/graph.jsonl`
+### 各角色职责
 
-### 3.3 环境要求
+| 角色 | 做什么 | 参考模板 |
+|------|--------|---------|
+| **Supervisor** | 判断任务类型，装配上下文，决定是否等用户确认 | `roles/supervisor.md` |
+| **Planner** | 生成章节 mini plan（目标/开头/中段/转折/结尾钩子） | `roles/planner.md` |
+| **Writer** | 根据 plan 写正文，输出草稿 + 摘要 + 伏笔变化 | `roles/writer.md` |
+| **Editor** | 审稿，检查一致性/伏笔/风格/风险 | `roles/editor.md` |
+| **World** | 处理设定变更，检测冲突 | `roles/world.md` |
 
-- 需要 Python 3.7+（用于运行 `scripts/*.py`）
-- 项目文件为 Markdown 格式，无需编译
+### 工作流中的索引读取
+
+**先读索引，再读正文**：
+
+```python
+# 写章节前，先读这些
+index/chapters.json       # 当前章节状态
+index/beats.jsonl        # 待推进伏笔
+index/characters.json     # 相关角色摘要
+index/locations.json      # 地点
+```
 
 ---
 
-## 四、目录结构
+## 四、Claude Code 特有约定
+
+### 4.1 工具使用
+
+| 操作 | 工具 |
+|------|------|
+| 写章节正文 | `Write` / `Edit` 工具 → `chapters/chXXX.md` |
+| 更新伏笔 | `Edit` → 追加到 `beats/TRACKING.md` 或 `index/beats.jsonl` |
+| 更新索引 | `Write` → 写入 `index/*.json` 或 `index/*.jsonl` |
+| 运行检查脚本 | `Bash` → `python scripts/*.py <workspace>` |
+| 知识图谱写入 | `Append` → `memory/ontology/graph.jsonl` |
+
+### 4.2 工作流状态
+
+```bash
+# 启动工作流
+python scripts/workflow_state.py <workspace> start write_chapter task_001 --workflow write_chapter
+
+# 推进工作流
+python scripts/workflow_state.py <workspace> advance --next_role Writer
+
+# 标记等待决策
+python scripts/workflow_state.py <workspace> waiting
+
+# 恢复工作流
+python scripts/workflow_state.py <workspace> resume --decision A
+
+# 查看状态
+python scripts/workflow_state.py <workspace> status
+```
+
+### 4.3 环境要求
+
+- Python 3.7+（用于运行 `scripts/*.py`）
+- PyYAML：`pip install pyyaml`
+
+---
+
+## 五、常用命令
+
+| 你说 | Agent 做 |
+|------|---------|
+| `写第 X 章` | 执行 write_chapter workflow |
+| `审一下第 X 章` | 执行 review_chapter workflow |
+| `帮我规划第二卷` | 执行 plan_volume workflow |
+| `新增一个角色` | 调用 World.add_character |
+| `查一下这个角色` | 读 `index/characters.json` |
+| `查伏笔状态` | 读 `index/beats.jsonl` |
+| `检查一致性` | `python scripts/consistency_check.py <workspace>` |
+| `检查伏笔` | `python scripts/beat_tracker.py <workspace>` |
+| `重建索引` | `python scripts/build_index.py <workspace>` |
+| `改成全自动` | 更新 `novel-agent.yaml` 的 `default_autonomy: L1` |
+
+---
+
+## 六、目录结构
 
 ```
 novel-agent/
 ├── AGENT.md              ← 核心定义（角色/任务/工作流/schema）
+├── AGENT_EXEC.md        ← 角色执行协调器规范
 ├── SKILL.md              ← OpenClaw 入口
 ├── CLAUDE.md             ← 本文件 — Claude Code / Codex 入口
 ├── SETUP_WIZARD.md       ← 首次使用引导
+├── docs/QUICKSTART.md   ← 10 分钟快速入门
 ├── README.md             ← 项目介绍
 ├── config/               ← 框架配置（4个 YAML）
 │   ├── project.yaml
 │   ├── writing.yaml
 │   ├── validation.yaml
 │   └── platforms.yaml
-├── server.js             ← Web UI 服务器
-├── scripts/              ← Python 验证脚本
+├── roles/                 ← 角色提示模板
+│   ├── supervisor.md
+│   ├── planner.md
+│   ├── writer.md
+│   ├── editor.md
+│   └── world.md
+├── scripts/               ← 工具脚本
+│   ├── build_index.py
+│   ├── incremental_index_update.py
+│   ├── workflow_state.py
 │   ├── consistency_check.py
 │   ├── beat_tracker.py
-│   ├── context_compressor.py
-│   └── outline_generator.py
-├── memory/ontology/       ← 知识图谱
+│   └── run_demo.py
+├── memory/ontology/        ← 知识图谱
 │   ├── schema.yaml
 │   └── graph.jsonl
-├── index/                 ← 结构化索引（第一版可选）
-├── workspace-template/    ← 用户项目模板
+├── index/                  ← 结构化索引 schema
+├── workspace-template/      ← 用户项目模板
 └── docs/                  ← 各平台安装指南
 ```
 
 ---
 
-## 五、用户项目放在哪？
+## 七、用户项目放在哪？
 
 **本目录是 novel-agent 的框架代码**，你的小说项目应该在同级另一个目录里。
 
@@ -107,11 +184,13 @@ novel-agent/
 projects/
 ├── novel-agent/           ← 本仓库（框架，不改）
 └── my-novel/             ← 你的小说项目
+    ├── novel-agent.yaml
     ├── world.md
     ├── characters/
     ├── chapters/
     ├── outline/
     ├── beats/
+    ├── index/
     └── style_guide.md
 ```
 
@@ -126,14 +205,16 @@ projects/
 
 ---
 
-## 六、相关文件
+## 八、相关文件
 
 | 文件 | 作用 |
 |------|------|
 | `AGENT.md` | **核心定义**（角色/任务/工作流/索引 schema） |
+| `AGENT_EXEC.md` | 角色执行协调器规范 |
 | `config/*.yaml` | 框架配置（项目无关的通用参数） |
+| `roles/*.md` | 5 个角色的具体提示模板 |
+| `scripts/` | 工作流脚本、索引构建、状态管理 |
 | `SKILL.md` | OpenClaw 平台入口 |
 | `CLAUDE.md` | 本文件 — Claude Code / Codex 入口 |
 | `SETUP_WIZARD.md` | 首次使用引导 |
-| `README.md` | 项目介绍 |
-| `docs/COMPATIBILITY.md` | 各平台详细说明 |
+| `docs/QUICKSTART.md` | 10 分钟快速入门 |
