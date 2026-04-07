@@ -1,0 +1,7 @@
+project:
+  title: ""
+  language: "zh-CN"
+  genre: ""
+  narrative_framework: "three_act"
+  default_autonomy: "L2"
+  default_model: ""

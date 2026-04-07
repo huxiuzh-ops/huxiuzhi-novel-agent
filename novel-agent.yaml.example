@@ -1,0 +1,35 @@
+# novel-agent.yaml — 项目配置文件
+# 
+# 这是你的小说项目的配置文件。
+# 由 Setup Wizard 生成，或手动创建/修改。
+#
+# config/ 目录下的框架默认值在这里被覆盖。
+# 格式优先级：config/*.yaml（默认） < novel-agent.yaml（项目覆盖）
+#
+# 不要把这个文件放进 novel-agent 框架目录！
+# 它属于你的小说项目目录。
+
+project:
+  title: ""                    # 你的书名
+  language: "zh-CN"            # 语言
+  genre: ""                    # 题材
+  narrative_framework: "three_act"  # three_act / 起承转合 / event_driven
+  default_autonomy: "L2"       # L1/L2/L3/L4
+
+writing:
+  min_words_per_chapter: 3000
+  max_consecutive_dialogue_lines: 5
+  require_chapter_hook: true
+  min_narrative_ratio: 0.4
+  style_guide_path: "style_guide.md"
+
+validation:
+  consistency_check: true
+  beat_tracking: true
+  timeline_check: false
+  report_level: "light"
+
+# 平台配置（通常使用框架默认值，不需要在这里重复）
+# platforms:
+#   openclaw:
+#     enabled: true

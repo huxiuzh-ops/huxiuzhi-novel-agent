@@ -1,0 +1,22 @@
+platforms:
+  openclaw:
+    enabled: true
+    entry: "SKILL.md"
+    core: "AGENT.md"
+
+  claude_code:
+    enabled: true
+    entry: "CLAUDE.md"
+    core: "AGENT.md"
+
+  codex:
+    enabled: true
+    entry: "CLAUDE.md"
+    core: "AGENT.md"
+
+  api_mode:
+    enabled: true
+    server_enabled: true
+    default_port: 8765
+    default_provider: "openai"
+    default_model: "gpt-4"

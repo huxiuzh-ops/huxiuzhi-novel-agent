@@ -1,4 +1,4 @@
-# Environment variables
+# Environment
 .env
 .env.local
 .env.*.local
@@ -8,6 +8,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.egg-info/
 
 # OS
 .DS_Store
@@ -22,21 +23,28 @@ Thumbs.db
 # Git
 *.log
 
-# Private novel files — do NOT commit your actual novel
-# Uncomment the following if you want to exclude your personal work:
-# my-novel/
-# chapters/
-
-# Build artifacts
+# Build
 node_modules/
 dist/
 build/
-*.egg-info/
 
-# Downloaded skills (install separately)
+# Downloaded / bundled assets
 skills/ui-ux-pro-max/
 *.zip
 
-# Build scripts (one-off)
+# Build scripts (one-off utility)
 scripts/build_ui.js
 scripts/check_ui.js
+
+# User小说项目（不要提交你的具体小说内容）
+# 在这里填入你的小说项目路径，例如：
+# my-novel/
+# /path/to/your/actual/novel/
+
+# 索引输出（由 build_index.py 生成，首次运行后自动创建）
+# 不要提交 index/*.json index/*.jsonl，用 .gitkeep 占位即可
+# index/
+index/.gitkeep
+
+# Workflow 状态（运行时生成）
+.workflow/

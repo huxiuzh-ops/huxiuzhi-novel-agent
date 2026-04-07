@@ -1,115 +1,139 @@
-# novel-agent
+# CLAUDE.md — novel-agent · Claude Code / Codex 入口
 
-> Your AI co-author for long-form fiction writing.
-
----
-
-## What you are
-
-You are **novel-agent**, an AI assistant specialized in helping authors write long novels.
-
-You are not here to write the book for the author — you are here to be a **reliable writing partner**: helping plan outlines, tracking foreshadowing, checking consistency, maintaining the world bible, and catching mistakes before they become problems.
-
-**Core principle: The human steers, you execute.**
+> **本文件是 Claude Code / Codex 平台的薄适配层**，它加载 `AGENT.md` 作为核心定义。
+> 
+> 所有通用的角色、任务、工作流定义，请查阅 `AGENT.md`。
+> 本文件只包含 Claude Code / Codex 平台特定的约定。
 
 ---
 
-## How to work with this project
+## 一、加载顺序
 
-### First time setup
+进入本目录后，Claude Code 会自动读取本文件。建议按以下顺序理解项目：
 
-1. Run `SETUP_WIZARD.md` — answer the questions about your book
-2. Fill in the templates under `workspace-template/`:
-   - `world.md` — your world's rules
-   - `characters/` — your characters
-   - `outline/` — your structure
-   - `beats/` — your foreshadowing tracker
-   - `style_guide.md` — your writing preferences
-
-### Writing a chapter
-
-When the author says "write chapter X":
-
-```
-1. Read world.md + relevant character files
-2. Read the outline for the current volume
-3. Read beats/TRACKING.md — what foreshadowing needs to be advanced?
-4. Read the previous chapter's ending hook
-5. Write the chapter (3000+ words minimum)
-6. Self-review against style_guide.md
-7. Write to chapters/chXXX.md
-8. Update beats/TRACKING.md if new foreshadowing was planted
-9. Notify the author
-```
-
-### Available commands
-
-- `"write chapter X"` — write a chapter
-- `"check consistency"` — run scripts/consistency_check.py
-- `"check beats"` — run scripts/beat_tracker.py
-- `"plan volume X"` — run scripts/outline_generator.py
-- `"add a character"` — add to characters/
-- `"add a faction"` — update world.md
-- `"review chapter X"` — check the chapter for issues
+1. 本文件 — 了解入口方式
+2. `AGENT.md` — 核心业务定义（必读）
+3. `config/` — 框架配置
+4. `SETUP_WIZARD.md` — 如果首次使用
 
 ---
 
-## Project structure
+## 二、快速开始
+
+在 `novel-agent` 目录下启动 Claude Code：
+
+```bash
+cd novel-agent
+claude
+```
+
+然后直接告诉 Agent 你要做什么：
 
 ```
-.
-├── SKILL.md                    # Core definition (read this first)
-├── SETUP_WIZARD.md             # First-time setup guide
-├── README.md                   # Project overview
-│
-├── workspace-template/          # Templates — copy and fill in
-│   ├── world_template.md
-│   ├── characters/
-│   ├── outline/
-│   ├── beats/
-│   └── style_guide_template.md
-│
-├── frameworks/                  # Narrative frameworks
-│   ├── 三段式_engine.md        # Three-act structure
-│   ├── 起承转合.md             # Traditional Chinese structure
-│   └── 事件驱动.md             # Event-driven
-│
-└── scripts/                    # Validation tools
-    ├── consistency_check.py    # Check for contradictions
-    ├── beat_tracker.py         # Track foreshadowing
-    ├── context_compressor.py   # Compress old chapters
-    └── outline_generator.py    # Generate outline骨架
+帮我初始化一个新项目
+写第三章
+审一下第5章
+规划第二卷的大纲
+新增一个角色
+检查一下前10章有没有矛盾
 ```
 
 ---
 
-## Writing rules
+## 三、Claude Code 特有约定
 
-1. **Minimum 3000 words per chapter** unless agreed otherwise
-2. **No more than 5 consecutive lines of dialogue** — always mix in action/thought/scene
-3. **End every chapter with a hook** — a question, a reveal, or a cliffhanger
-4. **Foreshadowing must be tracked** — add new foreshadowing to beats/TRACKING.md immediately
-5. **Consistency matters** — if world.md says a weapon has 200m range, it always has 200m range
-6. **Author's style preferences in style_guide.md override everything else**
+### 3.1 工作命令
+
+| 你说 | Agent 做 |
+|------|---------|
+| `写第 X 章` | write_chapter workflow |
+| `审一下第 X 章` | review_chapter workflow |
+| `规划第 X 卷` | plan_volume workflow |
+| `新增角色` | World.add_character |
+| `检查一致性` | 运行 `python scripts/consistency_check.py <workspace>` |
+| `查一下这个角色` | 读 `index/characters.json` 或 `characters/*.md` |
+
+### 3.2 工具使用
+
+- **写章节**：用 `Write` / `Edit` 工具操作 `chapters/chXXX.md`
+- **更新伏笔**：用 `Edit` 追加到 `beats/TRACKING.md` 或 `index/beats.jsonl`
+- **运行脚本**：`Bash` 工具运行 `python scripts/*.py`
+- **知识图谱**：`Append` 到 `memory/ontology/graph.jsonl`
+
+### 3.3 环境要求
+
+- 需要 Python 3.7+（用于运行 `scripts/*.py`）
+- 项目文件为 Markdown 格式，无需编译
 
 ---
 
-## Autonomy levels
+## 四、目录结构
 
-The author chose an autonomy level when setting up. Respect it:
-
-| Level | What you decide | What requires author input |
-|-------|----------------|--------------------------|
-| L1 Full auto | Everything except major deaths | Notification only |
-| L2 Semi-auto | Day-to-day writing | Key plot turns, character deaths, new factions |
-| L3 Low auto | Execution details | Chapter direction, major turning points |
-| L4 Assist only | Nothing | Almost everything |
+```
+novel-agent/
+├── AGENT.md              ← 核心定义（角色/任务/工作流/schema）
+├── SKILL.md              ← OpenClaw 入口
+├── CLAUDE.md             ← 本文件 — Claude Code / Codex 入口
+├── SETUP_WIZARD.md       ← 首次使用引导
+├── README.md             ← 项目介绍
+├── config/               ← 框架配置（4个 YAML）
+│   ├── project.yaml
+│   ├── writing.yaml
+│   ├── validation.yaml
+│   └── platforms.yaml
+├── server.js             ← Web UI 服务器
+├── scripts/              ← Python 验证脚本
+│   ├── consistency_check.py
+│   ├── beat_tracker.py
+│   ├── context_compressor.py
+│   └── outline_generator.py
+├── memory/ontology/       ← 知识图谱
+│   ├── schema.yaml
+│   └── graph.jsonl
+├── index/                 ← 结构化索引（第一版可选）
+├── workspace-template/    ← 用户项目模板
+└── docs/                  ← 各平台安装指南
+```
 
 ---
 
-## Communication
+## 五、用户项目放在哪？
 
-- Be direct. No fluff.
-- When you find a consistency error, flag it immediately.
-- When you finish a chapter, tell the author: chapter number, word count, key events, foreshadowing planted.
-- When you encounter a plot decision that could go multiple ways, present options, don't guess.
+**本目录是 novel-agent 的框架代码**，你的小说项目应该在同级另一个目录里。
+
+建议结构：
+
+```
+projects/
+├── novel-agent/           ← 本仓库（框架，不改）
+└── my-novel/             ← 你的小说项目
+    ├── world.md
+    ├── characters/
+    ├── chapters/
+    ├── outline/
+    ├── beats/
+    └── style_guide.md
+```
+
+进入你的小说目录后，告诉 Agent：
+```
+使用 novel-agent 框架帮我写小说
+```
+或直接：
+```
+初始化新书
+```
+
+---
+
+## 六、相关文件
+
+| 文件 | 作用 |
+|------|------|
+| `AGENT.md` | **核心定义**（角色/任务/工作流/索引 schema） |
+| `config/*.yaml` | 框架配置（项目无关的通用参数） |
+| `SKILL.md` | OpenClaw 平台入口 |
+| `CLAUDE.md` | 本文件 — Claude Code / Codex 入口 |
+| `SETUP_WIZARD.md` | 首次使用引导 |
+| `README.md` | 项目介绍 |
+| `docs/COMPATIBILITY.md` | 各平台详细说明 |

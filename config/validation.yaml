@@ -1,0 +1,19 @@
+validation:
+  consistency_check: true
+  beat_tracking: true
+  timeline_check: false
+  report_level: "light"
+  style_review:
+    enabled: false
+    level: "light"
+  risk_detection:
+    enabled: true
+    high_risk_types:
+      - "character_death_major"
+      - "main_plot_change"
+      - "world_rule_change"
+      - "foreshadowing_abandoned"
+
+beats:
+  overdue_warning_threshold: 3
+  overdue_danger_threshold: 5

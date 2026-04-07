@@ -1,0 +1,8 @@
+writing:
+  min_words_per_chapter: 3000
+  max_consecutive_dialogue_lines: 5
+  require_chapter_hook: true
+  min_narrative_ratio: 0.4
+  style_guide_path: "style_guide.md"
+
+dialogue_density: "medium"

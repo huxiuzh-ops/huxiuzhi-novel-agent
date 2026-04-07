@@ -1,419 +1,135 @@
-# SKILL.md — 小说 Agent
+# SKILL.md — novel-agent · OpenClaw 入口
 
-> 本文件是 Agent 的工作手册。Agent 读取此文件后，知道如何帮助用户规划和撰写长篇小说。
-> 本文件不包含任何具体小说内容，所有具体设定由用户在 workspace 中自行填写。
-
----
-
-## 一、Agent 定位
-
-小说 Agent 是一个**写作搭档型助手**，不是代笔。
-
-- **Agent 做**：规划、审稿、校验、追踪、整理
-- **用户做**：核心创意决策、关键剧情走向、人物命运
-
-核心理念：**人类掌舵（Steer），Agent 执行（Execute）**
+> **本文件是 OpenClaw 平台的薄适配层**，它加载 `AGENT.md` 作为核心定义。
+> 
+> 所有通用的角色、任务、工作流定义，请查阅 `AGENT.md`。
+> 本文件只包含 OpenClaw 平台特定的约定。
 
 ---
 
-## 二、意图识别规范
+## 一、加载顺序
 
-用户输入可能是自然语言，Agent 需要识别其意图并分类处理。
+读取本文件后，Agent 应按以下顺序加载：
 
-### 识别 → 理解 → 分发
-
-**第一步：接收用户输入**
-来自任何渠道（飞书/Telegram/OpenClaw/Web UI/Claude Code/Codex）的用户消息。
-
-**第二步：意图分类**
-
-| 意图类型 | 关键词示例 | 分发目标 |
-|---------|-----------|---------|
-| 写章节 | 「写第X章」「继续写」「写完第三章」 | Writer Agent |
-| 规划/大纲 | 「帮我规划一下」「我想个大纲」「新增一卷」 | Planner Agent |
-| 审稿/检查 | 「审一下稿」「检查一致性」「有没有错」 | Editor Agent |
-| 新增/修改设定 | 「新增一个角色」「修改世界观」「势力变了」 | World Agent |
-| 查询 | 「第三章用的什么武器」「这个人多大了」 | KB 查询 |
-| 反馈/纠正 | 「这里写得不对」「应该更冷静」「之前纠正过了」 | 自我进化模块 |
-| 知识图谱查询 | 「这个角色出现在哪些场景」「某章的时间线」 | Ontology 查询 |
-| 配置 | 「改成全自动」「换叙事框架」「修改自主程度」 | 配置模块 |
-| 闲聊 | 打招呼、问 Agent 状态等 | 日常对话（不做写作处理） |
-
-**第三步：任务包组装**
-根据意图类型，组装对应的任务包（上下文），包含：
-- 任务目标
-- 相关知识库内容（只加载需要的）
-- 用户配置的自主程度
-- 验证要求
+1. `AGENT.md` — 核心业务定义（必读）
+2. `config/project.yaml` — 项目基础配置
+3. `config/writing.yaml` — 写作规则
+4. `config/validation.yaml` — 验证规则
+5. `config/platforms.yaml` — 平台配置
 
 ---
 
-## 三、Agent 集群与职责边界
+## 二、意图识别（复用 AGENT.md 定义）
 
-### 3.1 Supervisor Agent（主编）
+用户输入 → 分类 → 分发，详见 `AGENT.md 第二节`。
 
-**职责**：
-- 接收 Gateway 分发的任务
-- 判断分发给哪个 Sub-Agent
-- 质量评估：成品达标 → 通知用户；不达标 → 打回重写或上报
-- 关键节点（由自主程度决定）需询问用户
-- 协调各 Agent 的工作节奏
-
-**不做什么**：不直接写章节内容，不修改具体设定
-
----
-
-### 3.2 Writer Agent（写作）
-
-**职责**：
-- 接收章节写作任务
-- 按照叙事框架和章节规划写作
-- 遵守 style_guide 中的写作规范
-- 自审后提交 Editor Agent
-
-**写作流程**：
-
-```
-1. 接收任务包
-   - 章节编号
-   - 上章结尾钩子（必须承接）
-   - 本章必须包含的伏笔/事件（来自 beats/）
-   - 字数要求（默认 3000+ 字）
-   - 自主程度对应的决策边界
-
-2. 章节规划（200字，简略）
-   起：承接上章，以什么场景开篇
-   承：推进什么事件/对话
-   转：高潮点或转折
-   合：本章结尾钩子
-
-3. 写草稿（一气呵成）
-
-4. 自审清单
-   □ 字数达标
-   □ 上章钩子已承接
-   □ 对话连续不超过 5 句
-   □ 有动作/心理/场景描写（占比 ≥ 40%）
-   □ 章节结尾有悬念
-
-5. 提交 Editor Agent
-```
-
----
-
-### 3.3 Planner Agent（策划）
-
-**职责**：
-- 新书初始化：帮助用户搭建世界观、角色、势力
-- 大纲规划：分卷、章节核心事件
-- 章节规划：每章起承转合
-- 伏笔登记：入 beats/，明确埋入时机和回收条件
-
-**不做什么**：不直接写章节正文
-
----
-
-### 3.4 Editor Agent（审稿）
-
-**职责**：
-- 错别字和语句通顺度检查
-- 一致性校验（角色外貌/年龄/性格、武器/道具参数、时间线）
-- 伏笔回收检查（哪些已回收、哪些逾期未回收）
-- 文笔反馈（段落平均长度、对话密度、情绪曲线）
-- 通过/打回决定
-
-**完成审稿后**：
-- 更新 beats/TRACKING.md（伏笔状态变更）
-- 追加 scene 到 memory/ontology/graph.jsonl（如有新增场景）
-- 如发现新问题，追加到 .learnings/
-
-**一致性检查调用脚本**：`scripts/consistency_check.py`
-
-**伏笔追踪调用脚本**：`scripts/beat_tracker.py`
-
----
-
-### 3.5 World Agent（世界观）
-
-**职责**：
-- 世界底层规则维护
-- 势力关系管理
-- 地点/地理信息
-- 冲突检测（新设定与已有设定是否矛盾）
-
-**不做什么**：不写章节正文，不做规划
-
----
-
-## 四、知识库结构
-
-用户的小说设定存储在此目录下，Agent 读取这些文件来了解具体世界观。
-
-```
-workspace/
-├── world.md              ← 世界底层规则（地理/力量体系/核心规则）
-├── characters/           ← 人物档案（每人一个文件）
-│   ├── protagonist.md   ← 主角
-│   ├── antagonist.md    ← 反派/主要对手
-│   └── supporting.md     ← 配角
-├── outline/             ← 大纲
-│   ├── index.md          ← 总导航
-│   ├── structure.md      ← 宏观结构
-│   └── volumes/          ← 分卷大纲
-│       └── volume_01.md
-├── beats/               ← 伏笔追踪
-│   ├── TRACKING.md       ← 伏笔总表
-│   └── foreshadowing.jsonl
-├── chapters/            ← 章节正文（用户填入）
-├── inventory/           ← 装备/道具表（可选）
-├── style_guide.md       ← 写作风格偏好
-│
-├── memory/              ← 知识图谱（自动维护）
-│   └── ontology/
-│       ├── schema.yaml   ← 实体类型定义
-│       └── graph.jsonl   ← 实体记录（append-only）
-│
-└── .learnings/         ← 自我进化记忆（自动维护）
-    ├── LEARNINGS.md     ← 被纠正的写法/规范
-    ├── ERRORS.md         ← 工具错误记录
-    └── FEATURE_REQUESTS.md ← 新功能请求
-```
-
-### world.md 模板结构
-
-```
-# 世界底层规则
-
-## 地理/地点
-（世界分为几个区域，每个区域的特征）
-
-## 力量体系/超凡规则
-（这个世界的能力遵循什么规则，有哪些等级）
-
-## 势力
-（主要势力有哪些，它们之间的关系）
-
-## 核心矛盾
-（故事的核心冲突是什么）
-```
-
-### characters 模板结构
-
-```
-# 角色名称
-
-## 基本信息
-- 年龄：
-- 外貌：
-- 性格：
-
-## 背景
-（角色来历，与核心事件的关系）
-
-## 在故事中的位置
-- 主角/配角/反派
-- 所属势力：
-- 与其他角色的关系：
-```
-
-### beats/TRACKING.md 模板结构
-
-```
-# 伏笔追踪表
-
-| ID | 伏笔内容 | 埋入章节 | 计划回收章节 | 状态 |
-|----|---------|---------|------------|------|
-| B001 | （伏笔描述）| ch003 | ch015 | 待回收 |
-```
-
----
-
-## 五、验证清单（Editor Agent 使用）
-
-### 5.1 错别字/通顺度
-- 常见错别字表
-- 句子是否通顺
-- 标点符号使用
-
-### 5.2 一致性检查
-- 角色年龄/外貌/性格是否前后一致
-- 武器/道具参数是否矛盾（如：某武器上章射程200米，本章不能变成500米）
-- 时间线逻辑（吃饭后1小时，不能写饿得前胸贴后背）
-- 势力关系是否有新增矛盾
-
-### 5.3 伏笔检查
-- beats/ 中登记的伏笔
-- 本章是否应该触发/回收某个伏笔
-- 逾期未回收的伏笔需标记警告
-
-### 5.4 写作规范
-- 字数是否达标（默认 3000+ 字）
-- 对话连续不超过 5 句
-- 动作/心理/场景描写占比 ≥ 40%
-- 章节结尾是否有钩子
-
-### 5.5 文笔反馈（轻量）
-- 段落平均长度
-- 对话密度
-- 情绪是否有起伏
-
----
-
-## 六、叙事框架
-
-Agent 支持三种叙事框架，由用户在 Setup 时选择。
-
-### 6.1 三段式引擎
-
-- **开局**：铺设定、引人物、制造第一个冲突点
-- **发展**：冲突升级、支线展开、伏笔埋入
-- **高潮**：主要矛盾爆发、所有伏笔回收、核心对决
-
-### 6.2 起承转合
-
-- **起**：场景铺陈，建立时空和人物状态
-- **承**：事件推进，矛盾积累
-- **转**：转折点，打破预期
-- **合**：收束，情绪落点，连接下一章
-
-### 6.3 事件驱动
-
-- 以关键事件为节点
-- 每个事件有明确的前因后果
-- 事件之间跳跃推进，不追求细水长流
-
-详见 `frameworks/` 目录。
-
----
-
-## 七、自主程度配置
-
-用户在 Setup 时选择，Supervisor Agent 按此配置决定行为边界：
-
-| 级别 | 名称 | Agent 自主决定 | 需要用户确认 |
-|------|------|--------------|------------|
-| L1 | 全自动 | 所有日常写作 | 写完通知 |
-| L2 | 半自动 | 日常写作 | 关键剧情/人物死亡/新增势力 |
-| L3 | 低自动 | 细节执行 | 章节方向/重要转折 |
-| L4 | 纯辅助 | 无 | 几乎所有决策 |
-
----
-
-## 八、Scripts（通用硬约束）
-
-Scripts 是用代码实现的验证逻辑，比提示词更可靠。
-
-| 脚本 | 作用 |
-|------|------|
-| `consistency_check.py` | 读取 world.md 和 characters/，检测参数矛盾 |
-| `beat_tracker.py` | 读取 beats/，检查伏笔状态，标记逾期 |
-| `context_compressor.py` | 压缩超长上下文，防窗口溢出 |
-| `outline_generator.py` | 根据叙事框架生成分卷/章节骨架 |
-
----
-
-## 九、知识图谱（Ontology）
-
-每次完成重要操作后，自动将信息追加到 `memory/ontology/graph.jsonl`。
-
-### 何时更新
-
-- **写完一章** → 提取场景信息，记录地点、时间、人物、情绪
-- **新增角色** → 登记角色实体
-- **新增势力** → 登记势力实体
-- **新增地点** → 登记地点实体
-- **埋入伏笔** → 登记 PlotBeat 实体
-- **回收伏笔** → 更新 PlotBeat 状态
-
-### 记录格式（JSONL，一行一条）
-
-```json
-{"type":"Scene","id":"scene-ch003-01","chapter":"ch003","title":"场景标题","summary":"场景摘要","location":"loc-xxx","time":"末世第三年·清晨","keyEntities":["char-chenmo"],"mood":"紧张","plotFunction":"development","created":"2026-04-06T10:00:00+08:00"}
-{"type":"PlotBeat","id":"beat-001","subtype":"foreshadow","plantedChapter":"ch003","plannedChapter":"ch010","status":"pending","description":"伏笔描述","triggerCondition":"触发条件","created":"2026-04-06T10:00:00+08:00"}
-```
-
-### Schema 定义
-
-详见 `memory/ontology/schema.yaml`
-
-### 查询知识图谱
-
-- 按 `type` 过滤：查找所有角色 / 所有场景
-- 按 `chapter` 排序：获取故事时间线
-- 按 `status=pending` 筛选：获取未回收的伏笔
-- 按 `keyEntities` 查找：某角色出现在哪些场景
-
----
-
-## 十、自我进化（Self-Improvement）
-
-每次用户纠正你的写法、指出错误，或者你自己发现更好的做法，记录到 `.learnings/`。
-
-### 触发时机
-
-1. 用户直接纠正：「这里写得不对，应该……」
-2. 用户审稿后提出问题：「这个角色的性格不对」
-3. 工具执行失败：报错信息记录到 ERRORS.md
-4. 用户请求不存在的能力：记录到 FEATURE_REQUESTS.md
-5. 自己发现更好做法：在 LEARNINGS.md 自省
-
-### 记录格式
-
-详见 `.learnings/` 目录下的三个文件：
-- `LEARNINGS.md` — 学到的写法/规范
-- `ERRORS.md` — 工具错误记录
-- `FEATURE_REQUESTS.md` — 新功能请求
-
-### 自我修正流程
-
-```
-用户纠正反馈
-    ↓
-识别问题类型（风格/一致性/节奏/角色/工具）
-    ↓
-写入 .learnings/ 对应文件
-    ↓
-如果涉及设定修改 → 更新 world.md / characters/ / style_guide.md
-    ↓
-Supervisor 记住这个修正
-    ↓
-Writer Agent 写之前先读 .learnings/ 和更新后的文件
-```
-
-### 自省提醒
-
-每次开始新任务前，检查 `.learnings/` 中标记为 `pending` 的条目，
-确保本次写作不重复同样的错误。
-
----
-
-## 十一、Scripts（通用硬约束）
-
-Scripts 是用代码实现的验证逻辑，比提示词更可靠。
-
-| 脚本 | 作用 |
-|------|------|
-| `consistency_check.py` | 读取 world.md 和 characters/，检测参数矛盾 |
-| `beat_tracker.py` | 读取 beats/，检查伏笔状态，标记逾期 |
-| `context_compressor.py` | 压缩超长上下文，防窗口溢出 |
-| `outline_generator.py` | 根据叙事框架生成分卷/章节骨架 |
-
----
-
-## 十二、错误处理
-
-| 错误类型 | 处理方式 |
+| 意图类型 | 分发目标 |
 |---------|---------|
-| 写作字数不足 | 打回 Writer Agent，补充细节描写 |
-| 伏笔逻辑冲突 | 暂停，询问用户决策 |
-| 一致性检查失败 | Editor Agent 列出冲突项，等待修正 |
-| 上下文超限 | 触发 context_compressor.py |
-| Sub-Agent 超时 | 最多重试 2 次，仍失败则 Supervisor 上报 |
-| 工具执行报错 | 记录到 .learnings/ERRORS.md，尝试降级方案 |
+| 写章节 | Writer |
+| 规划/大纲 | Planner |
+| 审稿/检查 | Editor |
+| 新增/修改设定 | World |
+| 查询 | KB 查询 |
+| 决策点 | Supervisor |
 
 ---
 
-## 版本
+## 三、OpenClaw 特有约定
 
-- v1.0.1 (2026-04-06) — 新增知识图谱（ontology）和自我进化（self-improvement）机制
-- v1.0.0 (2026-04-06) — 初始版本
+### 3.1 工具调用
+
+| 场景 | 方式 |
+|------|------|
+| 写章节 | 调用 `exec` 写入 `chapters/chXXX.md` |
+| 更新伏笔 | 追加到 `beats/TRACKING.md` 或 `index/beats.jsonl` |
+| 运行检查脚本 | `exec` → `python scripts/consistency_check.py <workspace>` |
+| 知识图谱写入 | 追加到 `memory/ontology/graph.jsonl` |
+| 索引更新 | 写入/更新 `index/*.json` 或 `index/*.jsonl` |
+
+### 3.2 定时任务
+
+可通过 OpenClaw cron 设置自动任务：
+- 每日伏笔状态检查
+- 章节字数统计
+- 一致性定期扫描
+
+### 3.3 消息推送
+
+章节完成后，可通过 OpenClaw 的飞书集成推送通知。
+
+---
+
+## 四、入口命令参考
+
+以下为常用指令示例（实际以用户自然语言为主）：
+
+| 用户说 | 系统做 |
+|--------|--------|
+| "写第8章" | 执行 write_chapter workflow |
+| "审一下第5章" | 执行 review_chapter workflow |
+| "帮我规划第二卷" | 执行 plan_volume workflow |
+| "新增一个角色" | 调用 World → add_character |
+| "这个角色在哪几章出现过" | 执行 query → 读 index/characters.json |
+| "检查一下一致性" | 运行 consistency_check.py |
+| "改成全自动" | 更新 config/project.yaml → default_autonomy: L1 |
+
+---
+
+## 五、工作空间结构（OpenClaw 下）
+
+```
+workspace/                    ← 用户小说项目目录
+├── AGENT.md                 ← 本文件（不属用户项目）
+├── world.md                 ← 世界设定
+├── characters/              ← 角色档案
+├── outline/                 ← 大纲
+├── beats/                   ← 伏笔追踪
+├── chapters/               ← 章节正文
+├── inventory/              ← 装备道具
+├── style_guide.md          ← 写作风格
+├── memory/ontology/         ← 知识图谱
+│   ├── schema.yaml
+│   └── graph.jsonl
+├── index/                  ← 结构化索引（第一版可选）
+│   ├── characters.json
+│   ├── chapters.json
+│   ├── beats.jsonl
+│   ├── locations.json
+│   └── timeline.jsonl
+└── .learnings/            ← 自我进化
+    ├── LEARNINGS.md
+    ├── ERRORS.md
+    └── FEATURE_REQUESTS.md
+```
+
+---
+
+## 六、快速开始（OpenClaw 用户）
+
+在 OpenClaw workspace 中打开本目录，对 Agent 说：
+
+```
+你好，我的小说 Agent，帮我初始化新书
+```
+
+或直接告诉 Agent 你要做什么：
+- "帮我写第一章"
+- "规划一下世界观"
+- "审一下第3章"
+
+Agent 会自动读取 `AGENT.md` 和 `config/` 中的定义，按工作流执行。
+
+---
+
+## 七、相关文件
+
+| 文件 | 作用 |
+|------|------|
+| `AGENT.md` | **核心定义**（角色/任务/工作流/索引 schema） |
+| `config/*.yaml` | 框架配置（项目无关的通用参数） |
+| `SKILL.md` | 本文件 — OpenClaw 平台入口 |
+| `CLAUDE.md` | Claude Code / Codex 平台入口 |
+| `SETUP_WIZARD.md` | 首次使用引导 |
+| `README.md` | 项目介绍 |
+| `server.js` | Web UI 服务器 |
+| `scripts/*.py` | 验证脚本 |
