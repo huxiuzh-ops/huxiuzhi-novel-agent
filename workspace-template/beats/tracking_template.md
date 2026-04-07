@@ -1,108 +1,85 @@
-# 伏笔追踪表
+# 伏笔追踪模板
 
-> 每次埋入新伏笔，登记在这里。Editor Agent 会检查伏笔状态，标记逾期未回收的项。
-
----
-
-## 使用说明
-
-- **ID**：唯一标识，格式 B001, B002...
-- **类型**：
-  - `foreshadow` = 预先埋伏（暗示后续情节）
-  - `reveal` = 揭示（揭示某个真相）
-  - `climax` = 高潮伏笔（支撑核心冲突）
-  - `resolution` = 收束伏笔（为结局铺垫）
-
-- **状态**：
-  - `pending` = 待回收
-  - `triggered` = 已触发（情节已发生但未正式回收）
-  - `resolved` = 已回收（完美闭合）
+> 每条伏笔/剧情线索对应一条记录。
+> 由 Agent 或用户手动添加到 `index/beats.jsonl`（以及 `beats/TRACKING.md`）。
+> 
+> **为什么要用这个模板**：每条伏笔都是一枚定时炸弹——埋下去不难，难的是准时引爆。
+> 用这个模板追踪，确保不会埋了忘收。
 
 ---
 
-## 伏笔总表
+## 字段说明
 
-| ID | 类型 | 伏笔内容 | 埋入章节 | 计划回收章节 | 实际回收章节 | 状态 |
-|----|------|---------|---------|------------|------------|------|
-| B001 | foreshadow | 织星者的暗中存在 | ch003 | ch050 | | pending |
-| B002 | reveal | 林博士父亲的死与病毒起源有关 | ch008 | ch105 | | pending |
-| B003 | climax | 陈末异能的失控倾向 | ch015 | ch115 | | pending |
-| B004 | foreshadow | 联盟高层有人与织星者合作 | ch060 | ch090 | | pending |
-
----
-
-## 逾期警告
-
-以下伏笔已超过计划回收章节但尚未回收，请检查：
-
-（Editor Agent 自动标记，自动更新）
+| 字段 | 说明 | 示例 |
+|------|------|------|
+| `id` | 唯一标识 | `beat_001` |
+| `type` | 伏笔类型 | `foreshadow` / `mystery` / `revelation` / `plot_twist` / `character_arc` |
+| `description` | 伏笔描述（1-2句话） | "残缺地图背后指向军方实验设施" |
+| `status` | 当前状态 | `pending` / `active` / `due_soon` / `overdue` / `resolved` / `abandoned` |
+| `planted_in` | 埋入章节 | `ch003` |
+| `planned_payoff` | 计划回收章节 | `ch010` |
+| `actual_payoff` | 实际回收章节（回收后填写） | `ch012` |
+| `related_characters` | 关联角色ID | `["char_chenmo", "char_linyue"]` |
+| `related_locations` | 关联地点ID | `["loc_yonghui"]` |
+| `priority` | 优先级 | `high` / `medium` / `low` |
 
 ---
 
-## 伏笔详细记录
+## 状态说明
 
-### B001 — 织星者
+| 状态 | 含义 |
+|------|------|
+| `pending` | 伏笔已埋，等待推进 |
+| `active` | 正在被提及/推进 |
+| `due_soon` | 临近计划回收（当前章 >= planned_payoff - 3） |
+| `overdue` | 超过计划回收章节尚未回收 |
+| `resolved` | 已回收 |
+| `abandoned` | 已废弃（不再回收） |
 
-```
-埋入时间：ch003
-计划章节：ch050
-内容描述：织星者是末世前冷战时期由多国秘密资助的AI项目"STARGAZER"的产物，
-         在末世中演变成了一个试图"拯救人类"的神秘组织。
-         实际上他们的计划是通过加速人类异能觉醒来筛选强者，
-         牺牲多数人来确保少数人存活。
+---
 
-回收条件：在 ch050 左右通过织星者联络人的出现来触发
-```
+## 添加新伏笔
 
-### B002 — 林博士父亲之死
-
-```
-埋入时间：ch008
-计划章节：ch105
-内容描述：林博士的父亲是第一个发现"盖亚"病毒异常进化规律的科学家。
-         他发现病毒在有意识地"选择"某些人类来觉醒异能，而不是随机变异。
-         他把这个发现报告给了联盟高层，三天后被"异能失控"死亡。
-         真相是织星者灭口。
-
-回收条件：通过陈末对林博士父亲遗物的调查来揭示
-```
-
-### B003 — 陈末异能失控
+在 `beats/TRACKING.md` 中追加一行：
 
 ```
-埋入时间：ch015
-计划章节：ch115
-内容描述：陈末的夜视异能（T1）并非自然觉醒，而是被织星者
-         在三年前刻意植入的。他的"觉醒"是计划的一部分。
-         失控倾向是因为植入的异物正在与他的神经系统整合。
+| beat_001 | foreshadow | 残缺地图背后指向军方实验设施 | ch003 | ch010 | pending |
+```
 
-回收条件：ch115 与织星者首领对峙时揭示
+同时运行：
+```bash
+python scripts/incremental_index_update.py <workspace> add_beat beat_001 \
+  --type foreshadow \
+  --description "残缺地图背后指向军方实验设施" \
+  --planted_in ch003 \
+  --planned_payoff ch010 \
+  --priority high
 ```
 
 ---
 
-## 新增伏笔格式
+## 更新伏笔状态
 
-当你在写作中新增伏笔时，按此格式追加：
+```bash
+# 伏笔被推进时
+python scripts/incremental_index_update.py <workspace> update_beat beat_001 --status active
 
-```
-### B00X — 伏笔名称
+# 伏笔回收时
+python scripts/incremental_index_update.py <workspace> update_beat beat_001 \
+  --status resolved --actual_payoff ch012
 
-```
-埋入时间：chXXX
-计划章节：chXXX
-内容描述：（简述）
-回收条件：（在什么情况下回收）
-```
+# 伏笔废弃时
+python scripts/incremental_index_update.py <workspace> update_beat beat_001 --status abandoned
 ```
 
 ---
 
-## 伏笔回收检查清单
+## 类型说明
 
-Editor Agent 每次审稿时检查：
-
-- [ ] 本章是否有应该触发的伏笔？（触发条件已满足）
-- [ ] 本章是否有应该回收的伏笔？（回收条件已满足）
-- [ ] 是否有伏笔已严重逾期（超过计划章节 10 章以上）？
-- [ ] 伏笔回收后，是否在 TRACKING.md 中更新状态？
+| 类型 | 含义 | 例子 |
+|------|------|------|
+| `foreshadow` | 预兆/伏笔 | "这个符号之后会再次出现" |
+| `mystery` | 谜团 | "林月为什么认识这个符号？" |
+| `revelation` | 揭露 | "主角的真实身份曝光" |
+| `plot_twist` | 剧情转折 | "盟友其实是幕后黑手" |
+| `character_arc` | 角色弧光 | "对手最终倒戈" |
