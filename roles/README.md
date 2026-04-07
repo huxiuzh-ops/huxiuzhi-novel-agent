@@ -1,76 +1,49 @@
-# roles/README.md — 角色提示模板
+# roles/ — 角色提示模板
 
-> 本目录存放 5 个角色的具体提示模板。
-> 
-> 每个角色的模板定义：
-> - 该角色的系统提示（role system prompt）
-> - 该角色收到的上下文结构
-> - 该角色应输出的格式
-> - 该角色的交接规则
-> 
-> 这些模板是 AGENT.md 中角色定义的具体实现。
-> 不同平台（OpenClaw / Claude Code / API）都引用这些模板。
+> 这里存放 5 个角色各自的提示模板，是 `AGENT.md` 中角色定义的具体实现。
+> 平台无关——OpenClaw / Claude Code / Codex / API 都使用同一套模板。
 
 ---
 
-## 文件清单
+## 文件说明
 
-| 文件 | 角色 | 用途 |
+| 文件 | 角色 | 职责 |
 |------|------|------|
-| `supervisor.md` | Supervisor | 任务分发、流程控制、决策升级 |
-| `planner.md` | Planner | 大纲规划、章节 mini plan |
-| `writer.md` | Writer | 正文写作、草稿输出 |
-| `editor.md` | Editor | 审稿、一致性检查、风险提示 |
-| `world.md` | World | 设定管理、冲突检测 |
+| `supervisor.md` | Supervisor（主编） | 任务分发、流程控制、决策升级 |
+| `planner.md` | Planner（策划） | 大纲规划、章节 mini plan |
+| `writer.md` | Writer（写作） | 正文写作、草稿输出 |
+| `editor.md` | Editor（审稿） | 审稿、一致性检查、风险提示 |
+| `world.md` | World（世界观） | 设定管理、冲突检测 |
 
 ---
 
 ## 使用方式
 
-### OpenClaw
-在 `SKILL.md` 或 `AGENT.md` 中，通过 `exec` 读取角色模板：
-```
-读取 roles/supervisor.md → 作为 Supervisor 的 system prompt
-```
+当 Agent 需要扮演某个角色时，读取对应模板作为提示：
 
-### Claude Code / Codex
-在 `CLAUDE.md` 中指示 Agent：
 ```
-当需要 Planner 时，读取 roles/planner.md 并按其指示工作
+需要 Planner 时 → 读取 roles/planner.md → 按其指示输出结构化章节计划
+需要 Writer 时 → 读取 roles/writer.md → 按其指示写正文
+需要 Editor 时 → 读取 roles/editor.md → 按其指示审稿
 ```
-
-### API Mode
-在组装上下文时，把对应角色的模板作为 system prompt 的一段注入。
 
 ---
 
 ## 模板结构
 
-每个角色模板都包含：
+每个模板包含：
 
 ```
 ## 角色身份
-[该角色是什么]
-
 ## 核心职责
-[该角色做什么]
-
-## 收到的输入
-[从上一个角色/系统传来什么数据]
-
-## 输出格式
-[该角色必须按什么格式输出]
-
-## 交接规则
-[输出交给谁、下一步怎么做]
-
-## 边界
-[什么情况必须升级、什么情况不能做]
+## 收到输入（JSON schema）
+## 输出格式（JSON schema）
+## 必须遵守的规则
+## 边界（什么能做 / 什么不能做）
 ```
 
 ---
 
-## 平台无关性
+## 自定义
 
-这些模板**不包含任何平台特定的工具调用**。
-平台特定的执行方式（如怎么写文件、怎么运行脚本）由各平台的适配层（SKILL.md / CLAUDE.md）负责。
+如果你的小说项目需要定制化角色行为（如 Writer 更注重某个风格），可以在用户小说的 `novel-agent.yaml` 中引用自定义模板路径来覆盖默认模板。

@@ -1,27 +1,23 @@
-# 结构化索引 / Structured Index
+# index/ — 结构化索引
 
-> 本目录存放 AI 与程序高频访问的结构化状态数据。
-> 
-> **设计原则**：
-> - 正文文件（`world.md`、`characters/`、`chapters/` 等）由人写、人读
-> - 索引文件由系统维护，AI 优先读取索引而不是正文
-> - 索引是"摘要层"，不是"全文复制层"
-> - 所有索引均可被人类修正
+> 结构化索引是 AI 与程序高频访问的项目状态摘要层。
+> **正文由人写、人读；索引由系统维护，AI 优先读索引而不是全文。**
 
 ---
 
-## 索引文件一览
+## 文件说明
 
 | 文件 | 格式 | 用途 |
 |------|------|------|
 | `characters.json` | JSON | 角色摘要索引 |
 | `chapters.json` | JSON | 章节摘要索引 |
-| `beats.jsonl` | JSONL | 伏笔/剧情线索追踪 |
+| `beats.jsonl` | JSONL | 伏笔/剧情线索追踪（append-only） |
 | `locations.json` | JSON | 地点摘要索引 |
-| `timeline.jsonl` | JSONL | 事件级时间线 |
+| `timeline.jsonl` | JSONL | 事件级时间线（含知识/状态变化） |
 | `decisions.jsonl` | JSONL | 人类决策点记录 |
 | `world_rules.json` | JSON | 世界规则机器摘要 |
-| `build-meta.json` | JSON | 索引构建元数据 |
+
+每个文件对应的 **schema 定义文档**（描述每个字段的含义）在 `../index/` 目录下，与本 `index/` 数据目录分开。
 
 ---
 
@@ -32,40 +28,49 @@
     ↓
 触发提取（AI 提取 或 规则脚本）
     ↓
-生成/更新索引候选
-    ↓
 Schema 校验
     ↓
 写入 index/
     ↓
-消费者：Agent / UI / 脚本 / Platform Adapter
+消费者：Agent / UI / 脚本
 ```
 
 ---
 
-## 更新策略
+## 生成初始索引
 
-三种方式共存：
+```bash
+python scripts/build_index.py <你的小说项目路径>
+```
 
-| 方式 | 触发时机 |
-|------|---------|
-| **任务后增量更新** | 写完章节、修改设定、审稿完成后自动更新 |
-| **手动全量重建** | 提供 `scripts/rebuild_index.py`，扫描全项目重新生成 |
-| **UI 手动修正** | 在界面上直接改角色状态、伏笔状态等 |
+这会扫描你的 `world.md`、`characters/`、`chapters/`、`beats/` 目录，生成 `index/` 下的所有索引文件。
 
 ---
 
-## Schema 校验
+## 增量更新
 
-详见各文件注释。必做校验：
-- 必填字段是否存在
-- ID 是否唯一
-- status 是否在允许集合中
-- 引用实体是否存在（章节ID、角色ID等）
-- 逻辑约束（last_appearance >= first_appearance 等）
+```bash
+# 更新章节索引
+python scripts/incremental_index_update.py <workspace> update_chapter ch008 --status final
+
+# 新增伏笔
+python scripts/incremental_index_update.py <workspace> add_beat beat_055 --type foreshadow --description "..."
+
+# 更新角色状态
+python scripts/incremental_index_update.py <workspace> update_character char_chenmo --status injured
+```
+
+完整命令列表见 `incremental_index_update.py --help`。
 
 ---
 
-## 跨平台说明
+## 与正文的关系
 
-索引目录和 schema 不依赖任何平台。OpenClaw / Claude / Codex / API 模式都使用同一套索引。
+- **索引是摘要，不是副本**——不存储正文内容，只存储 AI 高频查询的信息（id/状态/摘要/关系）
+- **正文是 source of truth**——如果索引和正文冲突，以正文为准，手动修正索引
+
+---
+
+## .gitignore
+
+`index/` 目录通常不需要提交到 Git（由 `build_index.py` 自动生成）。已在 `.gitignore` 中排除。
