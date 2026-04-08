@@ -11,22 +11,14 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
-# ─────────────────────────────────────────────────────────────
-# 工作空间状态文件：.workflow/state.json
-# ─────────────────────────────────────────────────────────────
-
 STATE_DIR = '.workflow'
 STATE_FILE = 'state.json'
 TASKS_FILE = 'tasks.jsonl'
 DECISIONS_FILE = 'decisions.jsonl'
 
-# ── 状态常量 ──────────────────────────────────────────────────
-
 TASK_STATUS = ['pending', 'running', 'blocked', 'waiting_human', 'done', 'failed', 'cancelled']
 WORKFLOW_TYPES = ['write_chapter', 'review_chapter', 'update_world', 'query', 'plan_volume', 'plan_chapter', 'add_character']
 ROLE_TYPES = ['Supervisor', 'Planner', 'Writer', 'Editor', 'World']
-
-# ── 工具函数 ─────────────────────────────────────────────────
 
 def get_state_path(workspace):
     return Path(workspace) / STATE_DIR
@@ -55,7 +47,6 @@ def save_state(workspace, state):
         json.dump(state, f, ensure_ascii=False, indent=2)
 
 def load_tasks(workspace):
-    """加载所有任务（从 tasks.jsonl）"""
     p = get_state_path(workspace) / TASKS_FILE
     if not p.exists():
         return []
@@ -72,11 +63,8 @@ def load_tasks(workspace):
     return tasks
 
 def save_task(workspace, task):
-    """追加或更新任务"""
     p = get_state_path(workspace) / TASKS_FILE
-    # 简单策略：全部重写
     tasks = load_tasks(workspace)
-    # 更新或追加
     updated = False
     for i, t in enumerate(tasks):
         if t.get('task_id') == task.get('task_id'):
@@ -97,23 +85,32 @@ def get_task_by_id(workspace, task_id):
     return None
 
 def task_to_history(task):
-    """把任务转为历史记录（去掉运行时字段）"""
     return {k: v for k, v in task.items() if k not in ['running', 'pending']}
 
-# ── 命令 ──────────────────────────────────────────────────────
+def fmt_outputs(outputs):
+    if not outputs:
+        return ''
+    parts = []
+    for o in outputs:
+        if isinstance(o, str):
+            parts.append(o)
+        elif isinstance(o, dict):
+            parts.append(o.get('file', str(o)))
+        else:
+            parts.append(str(o))
+    return ', '.join(parts)
 
 def cmd_start(workspace, args):
-    """启动一个新工作流"""
     state = load_state(workspace)
-    
+
     if state.get('current_workflow') and state['current_workflow'].get('status') == 'running':
         print(f"[WARN] 当前有运行中的工作流: {state['current_workflow']['workflow']} ({state['current_workflow']['task_id']})")
         if not args.force:
             print("使用 --force 强制覆盖")
             sys.exit(1)
-    
+
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%S+08:00")
-    
+
     workflow = {
         'workflow': args.workflow,
         'task_id': args.task_id,
@@ -126,11 +123,10 @@ def cmd_start(workspace, args):
         'outputs': [],
         'task_payload': {}
     }
-    
+
     state['current_workflow'] = workflow
     save_state(workspace, state)
-    
-    # 创建任务记录
+
     task = {
         'task_id': args.task_id,
         'workflow': args.workflow,
@@ -145,49 +141,47 @@ def cmd_start(workspace, args):
         'metadata': {}
     }
     save_task(workspace, task)
-    
+
     print(f"[OK] 工作流已启动: {args.workflow} ({args.task_id})")
     print(f"     下一步角色: {workflow['current_role']}")
 
 def cmd_advance(workspace, args):
-    """推进工作流到下一步"""
     state = load_state(workspace)
     wf = state.get('current_workflow')
-    
+
     if not wf or wf.get('status') != 'running':
         print("[ERROR] 没有运行中的工作流")
         sys.exit(1)
-    
+
     if args.task_id and wf.get('task_id') != args.task_id:
         print(f"[ERROR] 任务 ID 不匹配: {wf.get('task_id')} != {args.task_id}")
         sys.exit(1)
-    
+
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%S+08:00")
-    
+
     if args.next_role:
         wf['current_role'] = args.next_role
         wf['current_step'] = wf.get('current_step', 0) + 1
-    
+
     if args.status:
         wf['status'] = args.status
-    
+
     if args.output:
         wf['outputs'].append({
             'role': wf.get('current_role'),
             'file': args.output,
             'at': now
         })
-    
+
     if args.payload:
         wf['task_payload'].update(args.payload)
-    
+
     if args.warnings:
         wf.setdefault('warnings', []).extend(args.warnings)
-    
+
     state['current_workflow'] = wf
     save_state(workspace, state)
-    
-    # 更新任务状态
+
     task = get_task_by_id(workspace, wf['task_id'])
     if task:
         task['role'] = wf['current_role']
@@ -195,54 +189,50 @@ def cmd_advance(workspace, args):
         if args.output:
             task['outputs'].append(args.output)
         save_task(workspace, task)
-    
+
     print(f"[OK] 工作流已推进: {wf['workflow']}")
     print(f"     当前角色: {wf['current_role']}")
     print(f"     状态: {wf['status']}")
-    
+
     if wf['status'] == 'waiting_human':
-        print(f"     ⚠️ 等待人类决策")
+        print(f"     等待人类决策")
 
 def cmd_complete(workspace, args):
-    """标记工作流完成"""
     state = load_state(workspace)
     wf = state.get('current_workflow')
-    
+
     if not wf:
         print("[ERROR] 没有运行中的工作流")
         sys.exit(1)
-    
+
     if args.task_id and wf.get('task_id') != args.task_id:
-        print(f"[ERROR] 任务 ID 不匹配")
+        print("[ERROR] 任务 ID 不匹配")
         sys.exit(1)
-    
+
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%S+08:00")
-    
-    # 移到历史
+
     wf['status'] = 'done'
     wf['completed_at'] = now
     state['workflow_history'].append(wf)
     state['current_workflow'] = None
     save_state(workspace, state)
-    
-    # 更新任务
+
     task = get_task_by_id(workspace, wf['task_id'])
     if task:
         task['status'] = 'done'
         save_task(workspace, task)
-    
+
     print(f"[OK] 工作流已完成: {wf['workflow']} ({wf['task_id']})")
 
 def cmd_status(workspace, args):
-    """查看当前状态"""
     state = load_state(workspace)
     wf = state.get('current_workflow')
     tasks = load_tasks(workspace)
-    
+
     print(f"=" * 50)
     print(f"novel-agent 工作流状态")
     print(f"=" * 50)
-    
+
     if wf and wf.get('status') == 'running':
         print(f"\n运行中工作流:")
         print(f"  任务 ID: {wf['task_id']}")
@@ -251,79 +241,74 @@ def cmd_status(workspace, args):
         print(f"  步骤: {wf.get('current_step', 0)}/{len(wf.get('steps', []))}")
         print(f"  开始于: {wf['started_at']}")
         if wf.get('outputs'):
-            print(f"  输出: {', '.join(wf['outputs'])}")
+            print(f"  输出: {fmt_outputs(wf['outputs'])}")
         if wf.get('warnings'):
             print(f"  警告: {', '.join(wf['warnings'])}")
     else:
         print(f"\n无运行中的工作流")
-    
+
     if args.verbose and tasks:
         print(f"\n任务历史 ({len(tasks)} 条):")
         for t in tasks[-10:]:
             print(f"  [{t.get('status', '?')}] {t.get('task_id')} ({t.get('workflow')}) - {t.get('role')}")
-    
+
     print()
 
 def cmd_waiting(workspace, args):
-    """将当前工作流标记为等待人类决策"""
     state = load_state(workspace)
     wf = state.get('current_workflow')
-    
+
     if not wf:
         print("[ERROR] 没有运行中的工作流")
         sys.exit(1)
-    
+
     wf['status'] = 'waiting_human'
     state['current_workflow'] = wf
     save_state(workspace, state)
-    
-    # 更新任务
+
     task = get_task_by_id(workspace, wf['task_id'])
     if task:
         task['status'] = 'waiting_human'
         task['requires_human'] = True
         save_task(workspace, task)
-    
+
     print(f"[OK] 工作流已暂停，等待人类决策")
 
 def cmd_resume(workspace, args):
-    """从等待决策恢复工作流"""
     state = load_state(workspace)
     wf = state.get('current_workflow')
-    
+
     if not wf or wf.get('status') != 'waiting_human':
         print("[ERROR] 没有等待中的人类决策工作流")
         sys.exit(1)
-    
+
     if args.task_id and wf.get('task_id') != args.task_id:
         print("[ERROR] 任务 ID 不匹配")
         sys.exit(1)
-    
+
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%S+08:00")
-    
+
     wf['status'] = 'running'
     wf['resumed_at'] = now
     if args.decision:
         wf['task_payload']['human_decision'] = args.decision
-    
+
     state['current_workflow'] = wf
     save_state(workspace, state)
-    
+
     print(f"[OK] 工作流已恢复: {wf['workflow']}")
 
 def cmd_list(workspace, args):
-    """列出所有任务"""
     tasks = load_tasks(workspace)
     if not tasks:
         print("暂无任务记录")
         return
-    
+
     print(f"共 {len(tasks)} 条任务:")
     for t in tasks:
         print(f"  [{t.get('status', '?')}] {t.get('task_id')} | {t.get('workflow')} | {t.get('role')} | {t.get('created_at', '')[:10]}")
 
 def get_default_steps(workflow):
-    """返回各工作流的默认步骤"""
     steps = {
         'write_chapter': [
             {'step': 0, 'role': 'Supervisor', 'action': '识别任务'},
@@ -350,8 +335,6 @@ def get_default_steps(workflow):
     }
     return steps.get(workflow, [])
 
-# ── 主入口 ────────────────────────────────────────────────────
-
 def main():
     if len(sys.argv) < 2:
         print("用法: python workflow_state.py <workspace> <command> [options]")
@@ -366,24 +349,24 @@ def main():
         print("  list                           列出所有任务")
         print()
         print("示例:")
-        print("  python workflow_state.py ./my-novel start write_chapter task_001 --start_role Planner")
+        print("  python workflow_state.py ./my-novel start write_chapter task_001")
         print("  python workflow_state.py ./my-novel advance --next_role Writer --output chapters/ch001.md")
         print("  python workflow_state.py ./my-novel status --verbose")
         sys.exit(1)
-    
+
     workspace = sys.argv[1]
     if not os.path.exists(workspace):
         print(f"[ERROR] 工作空间不存在: {workspace}")
         sys.exit(1)
-    
+
     ensure_state_dir(workspace)
-    
+
     if len(sys.argv) < 3:
         cmd_status(workspace, argparse.Namespace(verbose=False))
         sys.exit(0)
-    
+
     cmd = sys.argv[2]
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--task_id', help='任务ID')
     parser.add_argument('--workflow', help='工作流类型')
@@ -399,9 +382,9 @@ def main():
     parser.add_argument('--force', action='store_true', help='强制覆盖')
     parser.add_argument('--decision', help='人类决策结果')
     parser.add_argument('--verbose', action='store_true', help='详细信息')
-    
+
     args = parser.parse_args(sys.argv[3:])
-    
+
     if cmd == 'start':
         if not args.workflow or not args.task_id:
             print("[ERROR] start 需要 --workflow 和 --task_id")

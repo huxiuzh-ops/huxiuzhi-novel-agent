@@ -136,7 +136,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);font-si
 .oitem{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 12px;text-align:center;transition:border-color var(--t);}
 .oitem:hover{border-color:var(--border-accent);}
 .ocount{font-family:var(--font);font-size:24px;font-weight:700;color:var(--primary);}
-.olabel{font-size:10px;color:var(--text-muted);margin-top:4px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;}
+.olabel{font-size:10px;color:var(--text-muted);margin-top:4px;letter-spacing:0.5px;font-weight:600;}
 </style>
 </head>
 <body>
@@ -144,15 +144,19 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);font-si
 <div class="sidebar-top"><div class="logo">novel-agent</div><div class="tagline">AI 小说协作工作台</div></div>
 <nav class="sidebar-nav">
 <div class="nav-section">总览</div>
-<div class="nav-item active" data-p="dashboard">◈ 仪表盘</div>
+<div class="nav-item active" data-p="dashboard"><span class="ni">◈</span> 仪表盘</div>
 <div class="nav-section">内容</div>
-<div class="nav-item" data-p="chapters">◉ 章节列表</div>
-<div class="nav-item" data-p="beats">◎ 伏笔追踪</div>
-<div class="nav-item" data-p="characters">◈ 角色档案</div>
-<div class="nav-item" data-p="world">◈ 世界设定</div>
-<div class="nav-item" data-p="style">◈ 写作风格</div>
+<div class="nav-item" data-p="chapters"><span class="ni">◎</span> 章节列表</div>
+<div class="nav-item" data-p="studio"><span class="ni">✎</span> 章节工作室</div>
+<div class="nav-item" data-p="beats"><span class="ni">◉</span> 伏笔追踪</div>
+<div class="nav-item" data-p="characters"><span class="ni">◈</span> 角色档案</div>
+<div class="nav-item" data-p="world"><span class="ni">◈</span> 世界设定</div>
+<div class="nav-item" data-p="style"><span class="ni">◈</span> 写作风格</div>
 <div class="nav-section">工具</div>
-<div class="nav-item" data-p="tools">◈ 检查工具</div>
+<div class="nav-item" data-p="decisions"><span class="ni">⚑</span> 决策中心</div>
+<div class="nav-item" data-p="tools"><span class="ni">⚙</span> 检查工具</div>
+<div class="nav-section">系统</div>
+<div class="nav-item" data-p="settings"><span class="ni">⚙</span> 设置</div>
 </nav>
 </aside>
 <main class="main">
@@ -211,6 +215,56 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);font-si
 <div class="card"><div class="md" id="sm"><div class="msg msg-c">加载中...</div></div></div>
 </div>
 
+<div class="page" id="pg-studio">
+<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+<button class="btn btn-p btn-sm" onclick="startWriteChapter()">✎ 写新章节</button>
+<button class="btn btn-g btn-sm" onclick="loadWorkflow()">↻ 刷新</button>
+<select id="ch-select" onchange="loadWorkflow()" style="margin-left:4px"><option value="">— 选择章节审稿 —</option></select>
+<button class="btn btn-g btn-sm" onclick="startReviewChapter()">🔍 审稿</button>
+</div>
+<div class="card" style="margin-bottom:12px">
+<div class="card-head"><div class="ctitle"><span class="ctitle-ic">▶</span> 当前工作流</div><span id="wf-status-badge"></span></div>
+<div id="wf-steps"><div class="msg msg-c">暂无运行中的工作流</div></div>
+<div class="wf-controls" id="wf-controls" style="display:none">
+<button class="btn btn-p btn-sm" onclick="wfAdvance()">→ 推进下一步</button>
+<button class="btn btn-g btn-sm" onclick="wfWaiting()">⏸ 暂停等决策</button>
+<button class="btn btn-danger btn-sm" onclick="wfComplete()">✓ 完成</button>
+</div>
+</div>
+<div class="card">
+<div class="card-head"><div class="ctitle"><span class="ctitle-ic">📋</span> 写作配置</div></div>
+<div id="cfg-display" style="padding:12px 16px;font-size:13px;color:var(--text-dim)">加载中...</div>
+</div>
+</div>
+
+<div class="page" id="pg-decisions">
+<div style="display:flex;gap:8px;margin-bottom:14px">
+<button class="btn btn-g btn-sm" onclick="loadDecisions()">↻ 刷新</button>
+<span style="font-size:12.5px;color:var(--text-dim);margin-left:8px" id="dec-count"></span>
+</div>
+<div id="dec-list"><div class="msg msg-c">加载中...</div></div>
+</div>
+
+<div class="page" id="pg-settings">
+<div class="settings-section">
+<div class="settings-title">工作区</div>
+<div class="settings-row">
+<div><div class="settings-label">当前工作区</div><div class="settings-desc" id="cfg-workspace">server.js 同目录（默认）</div></div>
+<div style="display:flex;gap:8px;align-items:center">
+<input type="text" id="ws-input" placeholder="./my-novel">
+<button class="btn btn-p btn-sm" onclick="setWorkspace()">切换</button>
+</div>
+</div>
+<div class="settings-row">
+<div class="settings-label">重置工作区</div>
+<div><button class="btn btn-g btn-sm" onclick="resetWorkspace()">↺ 恢复默认</button></div>
+</div>
+</div>
+<div class="settings-section">
+<div class="settings-title">项目配置</div>
+<div id="cfg-full"><div class="msg msg-c">加载中...</div></div>
+</div>
+</div>
 <div class="page" id="pg-tools">
 <div class="card">
 <div class="card-title">◈ 一致性检查</div>
@@ -240,16 +294,45 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);font-si
 </div>
 </div>
 
+
 <script>
 var API='http://localhost:8765';
-function api(p){return fetch(API+p).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}
-function apiText(p){return fetch(API+p).then(function(r){return r.ok?r.text():null;}).catch(function(){return null;});}
-var PT={dashboard:'仪表盘',chapters:'章节列表',beats:'伏笔追踪',characters:'角色档案',world:'世界设定',style:'写作风格',tools:'检查工具'};
+var WORKSPACE=null;
+var _oldApi=function(p){return fetch(API+p).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});};
+var _oldApiText=function(p){return fetch(API+p).then(function(r){return r.ok?r.text():null;}).catch(function(){return null;});};
+function api(p){return fetch(API+p+(WORKSPACE?"&workspace="+encodeURIComponent(WORKSPACE):"")).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}
+function apiText(p){return fetch(API+p+(WORKSPACE?"&workspace="+encodeURIComponent(WORKSPACE):"")).then(function(r){return r.ok?r.text():null;}).catch(function(){return null;});}
+function apiPost(p,data){return fetch(API+p,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)}).then(function(r){return r.json();}).catch(function(e){return{error:e.message};});}
+PT={dashboard:"仪表盘",chapters:"章节列表",studio:"章节工作室",beats:"伏笔追踪",characters:"角色档案",world:"世界设定",style:"写作风格",decisions:"决策中心",tools:"检查工具",settings:"设置"};
+function loadStudio(){loadWorkflow();loadCfgDisplay();loadChapterSelect();}
+function loadWorkflow(){api("/api/workflow").then(function(state){var wf=state&&state.current_workflow;var badge=document.getElementById("wf-status-badge");var stepsEl=document.getElementById("wf-steps");var ctrls=document.getElementById("wf-controls");if(!wf||wf.status!=="running"){badge.textContent="";badge.className="wf-status-badge";stepsEl.innerHTML='<div class="msg msg-c">暂无运行中的工作流</div>';ctrls.style.display="none";return;}badge.textContent=wf.status==="waiting_human"?"⏸ 等待决策":"▶ 运行中";badge.className="wf-status-badge "+(wf.status==="waiting_human"?"wf-waiting":"wf-running");var html="";(wf.steps||[]).forEach(function(s){var ia=s.step===wf.current_step;var id=s.step<wf.current_step;html+='<div class="wf-step "+(ia?"active":"")+(id?" done":"")+'"><div class="wf-step-num">'+(id?"✓":s.step)+'</div><div class="wf-step-role">'+s.role+'</div><div class="wf-step-action">'+s.action+'</div></div>';});stepsEl.innerHTML=html;ctrls.style.display="flex";});}
+function loadCfgDisplay(){api("/api/config").then(function(cfg){var p=(cfg&&cfg.project)||{};var w=(cfg&&cfg.writing)||{};var l=["标题: "+(p.title||"未设置"),"框架: "+(p.narrative_framework||"three_act"),"自主级别: "+(p.default_autonomy||"L2"),"最低字数: "+(w.min_words_per_chapter||3000)+" 字/章","要求结尾钩子: "+(w.require_chapter_hook?"是":"否")];document.getElementById("cfg-display").innerHTML='<div style="color:var(--text-dim);line-height:2">'+l.join("<br>")+"</div>";});}
+function loadChapterSelect(){api("/api/chapters").then(function(chs){var sel=document.getElementById("ch-select");if(!chs)return;var o='<option value="">— 选择章节审稿 —</option>';(chs||[]).forEach(function(c){o+='<option value="'+c.file+'">'+c.num+" "+(c.title||"")+"</option>";});sel.innerHTML=o;});}
+function startWriteChapter(){var ch=prompt("输入章节号（如 ch009）：");if(!ch||!ch.trim())return;ch=ch.trim();apiPost("/api/workflow/start",{workflow:"write_chapter",chapter:ch,task_id:"task_"+ch}).then(function(r){if(r.error)alert("错误: "+r.error);else{alert("工作流已启动！请在章节工作室查看");loadWorkflow();}});}
+function startReviewChapter(){var sel=document.getElementById("ch-select");var file=sel.value;if(!file){alert("请先在章节工作室选择要审稿的章节");return;}var ch=file.replace(".md","");apiPost("/api/workflow/start",{workflow:"review_chapter",chapter:ch,task_id:"review_"+ch}).then(function(r){if(r.error)alert("错误: "+r.error);else{alert("审稿工作流已启动");loadWorkflow();}});}
+function wfAdvance(){apiPost("/api/workflow/advance",{}).then(function(r){if(r.error)alert("错误: "+r.error);else loadWorkflow();});}
+function wfWaiting(){apiPost("/api/workflow/advance",{status:"waiting_human"}).then(function(r){if(r.error)alert("错误: "+r.error);else loadWorkflow();});}
+function wfComplete(){if(!confirm("确认完成当前工作流？"))return;apiPost("/api/workflow/complete",{}).then(function(r){if(r.error)alert("错误: "+r.error);else loadWorkflow();});}
+var _selOpts={};
+function loadDecisions(){api("/api/decisions").then(function(r){var pending=(r&&r.pending)||[];var all=(r&&r.all)||[];document.getElementById("dec-count").textContent=pending.length+" 项待决 / "+all.length+" 总计";var el=document.getElementById("dec-list");if(!all.length){el.innerHTML='<div class="msg msg-k">暂无决策记录 ✓</div>';return;}el.innerHTML=all.map(function(d){var cls=d.status==="waiting_human"?"waiting":"decided";var sl=d.status==="waiting_human"?"待决":"已决";var oh="";if(d.options&&d.status==="waiting_human"){oh='<div class="d-opts">'+d.options.map(function(o){return'<div class="d-opt" id="opt-'+d.id+'-'+o.id+'" onclick="selectOpt(&quot;'+d.id+'&quot;,&quot;'+o.id+'&quot;)"><div class="d-opt-id">'+o.id+'</div><div><div class="d-opt-label">'+o.label+'</div>'+(o.pros&&o.pros.length?'<div class="d-opt-pros">+ '+o.pros.join(", ")+"</div>":"")+(o.cons&&o.cons.length?'<div class="d-opt-cons">- '+o.cons.join(", ")+"</div>":"")+"</div></div>";}).join("")+"</div>";if(d.recommended)oh+='<div class="d-recommended">★ 推荐: '+d.recommended+"</div>";oh+='<textarea class="d-notes" id="notes-'+d.id+'" placeholder="备注（可选）"></textarea>';oh+='<div class="d-actions"><button class="btn btn-p btn-sm" onclick="resolveDecision(&quot;'+d.id+'&quot;)">✓ 确认决策</button></div>';}else if(d.status==="decided"){oh+='<div class="d-actions"><span class="d-status decided">✓ 已决定: '+d.chosen_option+"</span>"+(d.notes?' <span style="color:var(--text-dim);font-size:12px">'+d.notes+"</span>":"")+"</div>";}return'<div class="decision-card '+cls+'"><div class="d-header"><span class="d-id">'+d.id+'</span><span class="d-type">'+d.type+'</span><span class="d-status '+cls+'">'+sl+"</span></div><div class="d-summary">"+(d.summary||"")+"</div>"+(d.why_it_matters?'<div class="d-why">⚠ '+d.why_it_matters+"</div>":"")+oh+(d.chapter?'<div style="margin-top:8px;font-size:11.5px;color:var(--text-dim)">章节: '+d.chapter+" | 创建: "+(d.created_at||"").slice(0,10)+"</div>":"")+"</div>";}).join("");});}
+function selectOpt(did,oid){_selOpts[did]=oid;document.querySelectorAll('[id^="opt-'+did+'"]').forEach(function(el){el.classList.remove("selected");});document.querySelectorAll("#opt-"+did+"-"+oid).forEach(function(el){el.classList.add("selected");});}
+function resolveDecision(did){var opt=_selOpts[did]||prompt("输入选项ID（A/B/C...）：");if(!opt)return;var nt=document.getElementById("notes-"+did);nt=nt?nt.value:"";apiPost("/api/decisions/"+did+"/resolve",{option:opt,notes:nt}).then(function(r){if(r.error)alert("错误: "+r.error);else loadDecisions();});}
+function loadSettings(){var badge=document.getElementById("ws-badge");badge.textContent=WORKSPACE||"默认";badge.style.display="inline";document.getElementById("cfg-workspace").textContent=WORKSPACE||"server.js 同目录";document.getElementById("ws-input").value=WORKSPACE||"";api("/api/config").then(function(cfg){var p=(cfg&&cfg.project)||{};var h='<div class="settings-row"><div class="settings-label">书名</div><div class="settings-value">'+(p.title||"未设置")+'</div></div><div class="settings-row"><div class="settings-label">叙事框架</div><div class="settings-value">'+(p.narrative_framework||"three_act")+'</div></div><div class="settings-row"><div class="settings-label">默认自主级别</div><div class="settings-value">'+(p.default_autonomy||"L2")+'</div></div><div class="settings-row"><div class="settings-label">语言</div><div class="settings-value">'+(p.language||"zh-CN")+"</div></div>";document.getElementById("cfg-full").innerHTML=h;});}
+function setWorkspace(){var ws=document.getElementById("ws-input").value.trim();if(!ws)return;fetch(API+"/api/workspace",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({workspace:ws})}).then(function(r){return r.json();}).then(function(d){if(d.status==="ok"){WORKSPACE=ws;alert("已切换到: "+ws);loadSettings();}else{alert("切换失败");}}).catch(function(e){alert("错误: "+e.message);});}
+function resetWorkspace(){WORKSPACE=null;document.getElementById("ws-input").value="";document.getElementById("cfg-workspace").textContent="server.js 同目录（默认）";document.getElementById("ws-badge").style.display="none";alert("已重置为默认工作区");}
+// Dashboard override with decisions
+var _origLoadDash=loadDash;
+function loadDash(){api("/api/stats").then(function(d){if(!d){updateStatus(false);return;}updateStatus(true);document.getElementById("sv-ch").textContent=d.chapterCount||0;document.getElementById("sv-words").textContent=((d.totalWords||0)/10000).toFixed(1)+"万字";document.getElementById("sv-beats").textContent=d.beatCount||0;document.getElementById("sv-resolved").textContent=(d.resolvedBeats||0)+" 已回收";document.getElementById("sv-chars").textContent=d.charCount||0;document.getElementById("sv-alive").textContent=(d.activeChars||0)+" 在世";document.getElementById("sv-decisions").textContent="-";});api("/api/decisions").then(function(r){var pending=(r&&r.pending)?r.pending.length:0;document.getElementById("sv-decisions").textContent=pending;var rd=document.getElementById("rd");if(pending>0){rd.innerHTML=r.pending.slice(0,3).map(function(x){return'<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px"><span style="background:rgba(210,153,34,.15);color:var(--warning);padding:2px 7px;border-radius:8px;font-size:11px;margin-right:8px">待决</span><span>'+(x.summary||"").slice(0,40)+"</span></div>";}).join("");}else{rd.innerHTML='<div class="msg msg-k">暂无待确认决策 ✓</div>';}});api("/api/beats").then(function(b){var ov=document.getElementById("ov");if(!b){ov.innerHTML='<div class=msg>加载失败</div>';return;}var list=b.filter(function(x){return x.status==="overdue";});if(!list.length){ov.innerHTML='<div class="msg msg-k">✓ 暂无逾期</div>';return;}ov.innerHTML=list.slice(0,5).map(function(x){return'<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px"><span style="background:rgba(248,81,73,.15);color:var(--danger);padding:2px 7px;border-radius:8px;font-size:11px">逾期</span><span class=bid>'+x.id+'</span><span style="flex:1;color:var(--text-dim)">'+((x.description||"").slice(0,40))+'</span><span style="font-size:11.5px;color:var(--text-dim)">ch'+(x.plannedChapter||"-")+"</span></div>";}).join("");});api("/api/chapters").then(function(c){var rc=document.getElementById("rc");if(!c){rc.innerHTML='<div class=msg>加载失败</div>';return;}var r=(c||[]).slice(-5).reverse();if(!r.length){rc.innerHTML='<div class="msg msg-c">暂无章节</div>';return;}rc.innerHTML=r.map(function(ch){return'<div class=chitem onclick="openChapter(\''+ch.file+'\')"><span class=chn>'+ch.num+'</span><span class=cht>'+(ch.title||"无标题")+'</span><span class=chw>'+ch.words+'字</span><span class=charrow>→</span></div>';}).join("");});}
+// Tools page - update knowledge graph with Chinese labels
+var _origLoadTools=loadTools;
+function loadTools(){var og=document.getElementById("og");api("/api/ontology").then(function(d){if(!d){og.innerHTML='<div class=msg>加载失败</div>';return;}var types={};d.forEach(function(e){types[e.type]=(types[e.type]||0)+1;});var typeMap={"Character":"角色","Faction":"势力","Location":"地点","Scene":"场景","PlotBeat":"伏笔","Item":"道具"};og.innerHTML='<div class=ogrid>'+Object.keys(types).map(function(t){return'<div class=oitem><div class=ocount>'+types[t]+'</div><div class=olabel>'+(typeMap[t]||t)+'</div></div>';}).join("")+"</div><div class="msg" style="margin-top:12px;font-size:12px">共 "+d.length+" 条实体</div>";});}
+loadDash();
+// Navigation
 function nav(p){
 document.querySelectorAll('.nav-item').forEach(function(el){el.classList.toggle('active',el.dataset.p===p);});
 document.querySelectorAll('.page').forEach(function(el){el.classList.toggle('page-on',el.id==='pg-'+p);});
 document.getElementById('tt').textContent=PT[p]||p;
-var f={dashboard:loadDash,chapters:loadChapters,beats:loadBeats,characters:loadChars,world:loadWorld,style:loadStyle,tools:loadTools};
+var f={dashboard:loadDash,chapters:loadChapters,studio:loadStudio,beats:loadBeats,characters:loadChars,world:loadWorld,style:loadStyle,decisions:loadDecisions,tools:loadTools,settings:loadSettings};
 if(f[p])f[p]();}
 document.querySelectorAll('.nav-item').forEach(function(el){el.addEventListener('click',function(){nav(el.dataset.p);});});
 function updateStatus(ok){
@@ -280,122 +363,57 @@ if(l.includes('[WARNING]'))return'<span class=out-w>'+l+'</span>';
 if(l.includes('[ERROR]'))return'<span class=out-e>'+l+'</span>';
 if(l.includes('✅')||l.includes(' ok'))return'<span class=out-k>'+l+'</span>';
 return l;}
-function loadDash(){
-api('/api/stats').then(function(d){
-var sg=document.getElementById('sg');
-if(!d){sg.innerHTML='<div class=msg>服务器未连接。请运行 <code>node server.js</code></div>';updateStatus(false);return;}
-updateStatus(true);
-sg.innerHTML=''
-+'<div class=sc><div class=sl>章节总数</div><div class=sv>'+d.chapterCount+'</div><div class=ss>'+((d.totalWords||0)/10000).toFixed(1)+'万字</div></div>'
-+'<div class=sc><div class=sl>伏笔总数</div><div class=sv>'+d.beatCount+'</div><div class=ss>'+d.resolvedBeats+' 已回收</div></div>'
-+'<div class=sc><div class=sl>角色</div><div class=sv>'+d.charCount+'</div><div class=ss>'+d.activeChars+' 在世</div></div>'
-+'<div class=sc><div class=sl>逾期</div><div class=sv '+(d.overdueBeats>0?'sv-r':'sv-g')+'>'+d.overdueBeats+'</div><div class=ss>需关注</div></div>';});
-api('/api/beats').then(function(b){
-var ov=document.getElementById('ov');
-if(!b){ov.innerHTML='<div class=msg>加载失败</div>';return;}
-var list=b.filter(function(x){return x.status==='overdue';});
-if(list.length===0){ov.innerHTML='<div class="msg msg-k">✅ 暂无逾期伏笔</div>';return;}
-var html='';
-list.forEach(function(x){
-html+='<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.06);font-size:13px;">'
-+'<span class="bg bg-r">逾期</span>'
-+'<span class=bid>'+x.id+'</span>'
-+'<span class="bdesc" style="flex:1">'+((x.description||'').slice(0,50))+'</span>'
-+'<span style="color:var(--text-dim);font-size:12px;">ch'+x.plannedChapter+'</span></div>';});
-ov.innerHTML=html;});
-api('/api/chapters').then(function(c){
-var rc=document.getElementById('rc');
-if(!c){rc.innerHTML='<div class=msg>加载失败</div>';return;}
-var r=c.slice(-5).reverse();
-if(r.length===0){rc.innerHTML='<div class="msg msg-c">暂无章节</div>';return;}
-rc.innerHTML=r.map(function(ch){
-return '<div class=cli-item onclick="openChapter(\''+ch.file+'\')">'
-+'<span class=cli-n>'+ch.num+'</span>'
-+'<span class=cli-t>'+(ch.title||'无标题')+'</span>'
-+'<span class=cli-w>'+ch.words+'字</span></div>';}).join('');});}
+// Original page loaders
 function loadChapters(){
+api('/api/chapters').then(function(d){
 var el=document.getElementById('cl');
-el.innerHTML='<div class="msg msg-c">加载中...</div>';
-api('/api/chapters').then(function(c){
-if(!c){el.innerHTML='<div class=msg>加载失败，请确保服务器运行中</div>';return;}
-if(c.length===0){el.innerHTML='<div class="msg msg-c">暂无章节文件</div>';return;}
-el.innerHTML=c.map(function(ch){
-return '<div class=cli-item onclick="openChapter(\''+ch.file+'\')">'
-+'<span class=cli-n>'+ch.num+'</span>'
-+'<span class=cli-t>'+(ch.title||'无标题')+'</span>'
-+'<span class=cli-w>'+ch.words+'字</span></div>';}).join('');});}
-function openChapter(file){
-apiText('/api/read?path='+encodeURIComponent('chapters/'+file)).then(function(t){
-document.getElementById('mt').textContent='📖 '+file;
-document.getElementById('mb').innerHTML='<div class=md>'+md(t)+'</div>';
-document.getElementById('mdl').classList.add('modal-on');});}
+if(!d||!d.length){el.innerHTML='<div class=msg>暂无章节</div>';return;}
+el.innerHTML=d.map(function(x){return'<div class="cli-item"><span class="cli-n">'+x.file.replace('.md','')+'</span><span class="cli-t">'+x.title+'</span><span class="cli-w">'+x.words+'字</span></div>';}).join('');});}
 function loadBeats(){
-var tb=document.getElementById('bt');
-tb.innerHTML='<tr><td colspan="6" class="msg msg-c">加载中...</td></tr>';
-api('/api/beats').then(function(b){
-if(!b){tb.innerHTML='<tr><td colspan="6"><div class=msg>加载失败</div></td></tr>';return;}
-if(b.length===0){tb.innerHTML='<tr><td colspan="6"><div class="msg msg-c">暂无伏笔记录</div></td></tr>';return;}
-tb.innerHTML=b.map(function(x){
-var sc=x.status==='resolved'?'bg-g':x.status==='overdue'?'bg-r':'bg-y';
-var sl=x.status==='resolved'?'已回收':x.status==='overdue'?'逾期':'待回收';
-return '<tr><td><span class=bid>'+x.id+'</span></td><td>'+(x.type||'-')+'</td>'
-+'<td><span class=bdesc>'+(x.description||'-')+'</span></td>'
-+'<td>'+(x.plantedChapter||'-')+'</td><td>'+(x.plannedChapter||'-')+'</td>'
-+'<td><span class="bg '+sc+'">'+sl+'</span></td></tr>';}).join('');});}
-function runBeats(){
-var o=document.getElementById('bout');
-o.classList.add('out-on');o.innerHTML='运行中...';
-fetch(API+'/api/run?script=beats').then(function(r){return r.text();}).then(function(t){
-o.innerHTML=t.split('\n').map(function(l){return fmt(l);}).join('\n');
-loadBeats();loadDash();});}
+api('/api/beats').then(function(d){
+var el=document.getElementById('bt');
+if(!d||!d.length){el.innerHTML='<tr><td colspan="6" class=msg>暂无伏笔</td></tr>';return;}
+el.innerHTML=d.map(function(x){
+var bg='bg-g';
+if(x.status==='overdue')bg='bg-r';
+else if(x.status==='pending'||x.status==='active')bg='bg-y';
+else if(x.status==='resolved')bg='bg-g';
+var st=x.status==='overdue'?'逾期':x.status==='resolved'?'已回收':x.status==='active'?'激活':'待处理';
+return'<tr><td><span class=bid>'+x.id+'</span></td><td>'+(x.type||'')+'</td><td><span class=bdesc>'+x.description+'</span></td><td>'+(x.plantedChapter||'')+'</td><td>'+(x.plannedChapter||'')+'</td><td><span class="bg '+bg+'">'+st+'</span></td></tr>';}).join('');});}
 function exportBeats(){
-var rows=document.querySelectorAll('#bt tr');
-if(!rows.length)return;
-var csv='ID,类型,内容,埋入,计划,状态\n';
-rows.forEach(function(row){
-var c=row.querySelectorAll('td');
-if(c.length>=6)csv+=c[0].textContent.trim()+','+c[1].textContent.trim()+',"'+c[2].textContent.trim().replace(/"/g,'""')+'",'+c[3].textContent.trim()+','+c[4].textContent.trim()+','+c[5].textContent.trim()+'\n';});
-var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='beats_export.csv';a.click();}
+api('/api/beats').then(function(d){
+if(!d||!d.length)return;
+var csv='ID,类型,描述,埋入章节,计划章节,状态\n';
+d.forEach(function(x){csv+='"'+x.id+'","'+(x.type||'')+'","'+(x.description||'')+'","'+(x.plantedChapter||'')+'","'+(x.plannedChapter||'')+'","'+(x.status||'')+'"\n';});
+var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+var url=URL.createObjectURL(blob);
+var a=document.createElement('a');
+a.href=url;a.download='beats_export.csv';a.click();
+URL.revokeObjectURL(url);});}
 function loadChars(){
-var g=document.getElementById('cg');
-g.innerHTML='<div class="msg msg-c">加载中...</div>';
-api('/api/characters').then(function(c){
-if(!c){g.innerHTML='<div class=msg>加载失败，请确保服务器运行中</div>';return;}
-if(c.length===0){g.innerHTML='<div class="msg msg-c">暂无角色文件</div>';return;}
-g.innerHTML=c.map(function(x){
-var rc=x.role==='protagonist'?'bg-a':x.role==='antagonist'?'bg-r':'bg-p';
-var rl=x.role==='protagonist'?'主角':x.role==='antagonist'?'反派':'配角';
-var salive=x.status==='alive';
-return '<div class=cc><div class=cn>'+x.name+'</div>'
-+'<span class="bg '+rc+'">'+rl+'</span>'
-+'<div class=cm>年龄：<span>'+(x.age||'-')+'</span></div>'
-+'<div class=cm>势力：<span>'+(x.faction||'-')+'</span></div>'
-+'<div class=cm>状态：<span style="color:'+(salive?'var(--green)':'var(--red)')+'">'+(salive?'在世':'已故')+'</span></div></div>';}).join('');});}
+api('/api/characters').then(function(d){
+var el=document.getElementById('cg');
+if(!d||!d.length){el.innerHTML='<div class=msg>暂无角色</div>';return;}
+el.innerHTML=d.map(function(x){
+var role={'protagonist':'主角','antagonist':'反派','supporting':'配角'}[x.role]||'配角';
+var status={'alive':'在世','dead':'已故'}[x.status]||'在世';
+return'<div class=cc><div class=cn>'+x.name+'</div><div class=cm><span>'+role+'</span><span>'+status+'</span></div>'+(x.faction?'<div class=cm><span>'+x.faction+'</span></div>':'')+'</div>';}).join('');});}
 function loadWorld(){
-var e=document.getElementById('wm');
-e.innerHTML='<div class="msg msg-c">加载中...</div>';
-apiText('/api/read?path='+encodeURIComponent('world.md')).then(function(t){e.innerHTML=md(t);});}
+var el=document.getElementById('wm');
+apiText('/api/read?path='+encodeURIComponent('world.md')).then(function(t){if(t){el.innerHTML=md(t);}else{el.innerHTML='<div class=msg>world.md 未找到</div>';}});}
 function loadStyle(){
-var e=document.getElementById('sm');
-e.innerHTML='<div class="msg msg-c">加载中...</div>';
-apiText('/api/read?path='+encodeURIComponent('style_guide.md')).then(function(t){e.innerHTML=md(t);});}
-function loadTools(){
-var og=document.getElementById('og');
-api('/api/ontology').then(function(d){
-if(!d){og.innerHTML='<div class=msg>加载失败，请确保服务器运行中</div>';return;}
-var types={};
-d.forEach(function(e){types[e.type]=(types[e.type]||0)+1;});
-og.innerHTML='<div class=ogrid>'+Object.keys(types).map(function(t){
-return '<div class=oitem><div class=ocount>'+types[t]+'</div><div class=olabel>'+t+'</div></div>';}).join('')+'</div><div class=msg style="margin-top:12px;font-size:12px;">共 '+d.length+' 条实体</div>';});}
+var el=document.getElementById('sm');
+apiText('/api/read?path='+encodeURIComponent('style_guide.md')).then(function(t){if(t){el.innerHTML=md(t);}else{el.innerHTML='<div class=msg>style_guide.md 未找到</div>';}});}
 function runConsistency(){
 var o=document.getElementById('cout');
 o.classList.add('out-on');o.innerHTML='运行中...';
 fetch(API+'/api/run?script=consistency').then(function(r){return r.text();}).then(function(t){
 o.innerHTML=t.split('\n').map(function(l){return fmt(l);}).join('\n');
-loadDash();});}
+_origLoadDash();});}
 function closeModal(){document.getElementById('mdl').classList.remove('modal-on');}
 document.getElementById('mdl').addEventListener('click',function(e){if(e.target===this)closeModal();});
-loadDash();
+
 </script>
+
 </body>
 </html>

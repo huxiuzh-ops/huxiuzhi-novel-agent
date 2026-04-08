@@ -11,17 +11,13 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-# ─────────────────────────────────────────────────────────────
-# 演示项目路径
-# ─────────────────────────────────────────────────────────────
 DEMO_DIR = Path(__file__).parent.parent / 'demo-novel'
 SCRIPTS_DIR = Path(__file__).parent
 
-# ─────────────────────────────────────────────────────────────
-# 颜色输出
-# ─────────────────────────────────────────────────────────────
+YES_MODE = '--yes' in sys.argv
+NO_CLEANUP = '--no-cleanup' in sys.argv or '--no_cleanup' in sys.argv
+
 def c(text, color):
-    """带颜色的打印"""
     colors = {
         'header': '\033[95m',
         'ok': '\033[92m',
@@ -39,60 +35,57 @@ def header(text):
     print(f"{'='*60}\n")
 
 def step(text):
-    print(c(f"  → {text}", 'info'))
+    print(c(f"  -> {text}", 'info'))
 
 def ok(text):
-    print(c(f"  ✓ {text}", 'ok'))
+    print(c(f"  OK {text}", 'ok'))
 
 def warn(text):
-    print(c(f"  ⚠ {text}", 'warn'))
+    print(c(f"  WARN {text}", 'warn'))
 
-def section(name):
-    print(c(f"\n[{name}]", 'bold'))
+def ask(prompt, default='y'):
+    if YES_MODE:
+        print(f"{prompt} {default}")
+        return default
+    if sys.stdin.isatty():
+        return input(prompt).strip().lower() or default
+    print(f"{prompt} {default}")
+    return default
 
-# ─────────────────────────────────────────────────────────────
-# Step 0: 检查依赖
-# ─────────────────────────────────────────────────────────────
 def check_dependencies():
     header("Step 0: 检查依赖")
-    
-    # 检查 Python
+
     try:
         result = subprocess.run(
-            ['python', '--version'], 
+            ['python', '--version'],
             capture_output=True, text=True
         )
         ok(f"Python: {result.stdout.strip()}")
     except:
         warn("Python 未找到，请先安装 Python 3.7+")
         return False
-    
-    # 检查 PyYAML（用于解析 YAML 配置）
+
     try:
         import yaml
         ok("PyYAML: 已安装")
     except ImportError:
         warn("PyYAML 未安装，运行: pip install pyyaml")
-    
+
     return True
 
-# ─────────────────────────────────────────────────────────────
-# Step 1: 初始化演示项目
-# ─────────────────────────────────────────────────────────────
 def init_demo_project():
     header("Step 1: 初始化演示项目")
-    
+
     if DEMO_DIR.exists():
         warn(f"演示目录已存在: {DEMO_DIR}")
-        response = input("  是否删除重建？(y/N): ").strip().lower()
+        response = ask("  是否删除重建？(y/N): ", 'n')
         if response == 'y':
             shutil.rmtree(DEMO_DIR)
             ok("已删除旧目录")
         else:
             print("  跳过初始化")
             return False
-    
-    # 创建目录结构
+
     step("创建目录结构...")
     dirs = [
         'characters', 'outline/volumes', 'beats',
@@ -100,43 +93,39 @@ def init_demo_project():
     ]
     for d in dirs:
         (DEMO_DIR / d).mkdir(parents=True, exist_ok=True)
-    
-    # 复制模板
+
     step("复制 workspace-template...")
     template_dir = SCRIPTS_DIR.parent / 'workspace-template'
-    
+
     files_to_copy = [
         ('world_template.md', 'world.md'),
         ('style_guide_template.md', 'style_guide.md'),
         ('outline/structure_template.md', 'outline/structure.md'),
         ('beats/tracking_template.md', 'beats/TRACKING.md'),
     ]
-    
+
     for src_name, dst_name in files_to_copy:
         src = template_dir / src_name
         dst = DEMO_DIR / dst_name
         if src.exists():
             shutil.copy(src, dst)
-    
-    # 角色模板复制
+
     chars_src = template_dir / 'characters'
     chars_dst = DEMO_DIR / 'characters'
-    for f in chars_src.glob('*_template.md'):
-        dst_f = chars_dst / f.name.replace('_template', '')
-        shutil.copy(f, dst_f)
-    
+    if chars_src.exists():
+        for f in chars_src.glob('*_template.md'):
+            dst_f = chars_dst / f.name.replace('_template', '')
+            shutil.copy(f, dst_f)
+
     ok(f"演示项目创建完成: {DEMO_DIR}")
     return True
 
-# ─────────────────────────────────────────────────────────────
-# Step 2: 生成初始索引
-# ─────────────────────────────────────────────────────────────
 def build_demo_index():
     header("Step 2: 生成初始索引")
-    
+
     if not (DEMO_DIR / 'index').exists():
         (DEMO_DIR / 'index').mkdir(parents=True)
-    
+
     step("运行 build_index.py...")
     try:
         result = subprocess.run(
@@ -153,8 +142,7 @@ def build_demo_index():
         warn("build_index.py 未找到，跳过")
     except Exception as e:
         warn(f"索引构建出错: {e}")
-    
-    # 手动生成一个 minimal world_rules.json
+
     world_rules = {
         "power_system": [],
         "world_constraints": [
@@ -175,26 +163,23 @@ def build_demo_index():
         "key_items": [],
         "updated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S+08:00")
     }
-    
+
     (DEMO_DIR / 'index' / 'world_rules.json').write_text(
         json.dumps(world_rules, ensure_ascii=False, indent=2),
         encoding='utf-8'
     )
     ok("world_rules.json 生成完成")
 
-# ─────────────────────────────────────────────────────────────
-# Step 3: 演示工作流状态机
-# ─────────────────────────────────────────────────────────────
 def demo_workflow_state():
     header("Step 3: 演示工作流状态机")
-    
+
     step("查看当前状态...")
     result = subprocess.run(
         [sys.executable, str(SCRIPTS_DIR / 'workflow_state.py'), str(DEMO_DIR), 'status'],
         capture_output=True, text=True
     )
     print(result.stdout)
-    
+
     step("启动 write_chapter 工作流...")
     task_id = f"task_demo_{datetime.now().strftime('%H%M%S')}"
     result = subprocess.run(
@@ -211,7 +196,7 @@ def demo_workflow_state():
         ok(f"工作流已启动: {task_id}")
     else:
         warn(f"工作流启动失败: {result.stderr}")
-    
+
     step("推进到 Writer 角色...")
     result = subprocess.run(
         [
@@ -223,7 +208,7 @@ def demo_workflow_state():
         capture_output=True, text=True
     )
     print(result.stdout)
-    
+
     step("推进到 Editor 角色...")
     result = subprocess.run(
         [
@@ -234,7 +219,7 @@ def demo_workflow_state():
         capture_output=True, text=True
     )
     print(result.stdout)
-    
+
     step("标记等待人类决策（演示用）...")
     result = subprocess.run(
         [
@@ -244,7 +229,7 @@ def demo_workflow_state():
         capture_output=True, text=True
     )
     print(result.stdout)
-    
+
     step("恢复工作流...")
     result = subprocess.run(
         [
@@ -255,7 +240,7 @@ def demo_workflow_state():
         capture_output=True, text=True
     )
     print(result.stdout)
-    
+
     step("完成工作流...")
     result = subprocess.run(
         [
@@ -267,12 +252,9 @@ def demo_workflow_state():
     print(result.stdout)
     ok("工作流演示完成")
 
-# ─────────────────────────────────────────────────────────────
-# Step 4: 演示增量索引更新
-# ─────────────────────────────────────────────────────────────
 def demo_incremental_update():
     header("Step 4: 演示增量索引更新")
-    
+
     step("更新章节状态...")
     result = subprocess.run(
         [
@@ -290,7 +272,7 @@ def demo_incremental_update():
         ok("章节索引更新完成")
     else:
         warn(f"更新失败: {result.stderr}")
-    
+
     step("新增一条伏笔...")
     result = subprocess.run(
         [
@@ -307,7 +289,7 @@ def demo_incremental_update():
     if result.returncode == 0:
         print(result.stdout)
         ok("伏笔添加完成")
-    
+
     step("新增地点...")
     result = subprocess.run(
         [
@@ -325,12 +307,9 @@ def demo_incremental_update():
         print(result.stdout)
         ok("地点添加完成")
 
-# ─────────────────────────────────────────────────────────────
-# Step 5: 查看最终状态
-# ─────────────────────────────────────────────────────────────
 def show_final_status():
     header("Step 5: 查看项目最终状态")
-    
+
     step("读取 index/chapters.json...")
     ch_file = DEMO_DIR / 'index' / 'chapters.json'
     if ch_file.exists():
@@ -338,7 +317,7 @@ def show_final_status():
         print(f"  共 {len(data)} 个章节")
         for ch in data:
             print(f"    - {ch.get('id')}: {ch.get('title', '无标题')} ({ch.get('status')})")
-    
+
     step("读取 index/characters.json...")
     char_file = DEMO_DIR / 'index' / 'characters.json'
     if char_file.exists():
@@ -346,7 +325,7 @@ def show_final_status():
         print(f"  共 {len(data)} 个角色")
         for c in data:
             print(f"    - {c.get('id')}: {c.get('name')} ({c.get('role')})")
-    
+
     step("读取 beats 伏笔...")
     beats_file = DEMO_DIR / 'index' / 'beats.jsonl'
     if beats_file.exists():
@@ -358,7 +337,7 @@ def show_final_status():
         print(f"  共 {len(beats)} 条伏笔")
         for b in beats.values():
             print(f"    - {b.get('id')}: {b.get('description','')[:40]}... [{b.get('status')}]")
-    
+
     step("读取地点索引...")
     loc_file = DEMO_DIR / 'index' / 'locations.json'
     if loc_file.exists():
@@ -367,13 +346,14 @@ def show_final_status():
         for l in data:
             print(f"    - {l.get('id')}: {l.get('name')} ({l.get('kind')})")
 
-# ─────────────────────────────────────────────────────────────
-# 清理
-# ─────────────────────────────────────────────────────────────
 def cleanup():
     header("清理")
     if DEMO_DIR.exists():
-        response = input(f"是否删除演示项目 {DEMO_DIR}？(y/N): ").strip().lower()
+        if NO_CLEANUP:
+            ok("保留演示项目（--no-cleanup）")
+            print(f"  演示项目位置: {DEMO_DIR}")
+            return
+        response = ask(f"是否删除演示项目 {DEMO_DIR}？(y/N): ", 'n')
         if response == 'y':
             shutil.rmtree(DEMO_DIR)
             ok("已删除")
@@ -381,33 +361,29 @@ def cleanup():
             ok("保留演示项目")
             print(f"  演示项目位置: {DEMO_DIR}")
 
-# ─────────────────────────────────────────────────────────────
-# 主入口
-# ─────────────────────────────────────────────────────────────
 def main():
     print(c("""
-    ╔══════════════════════════════════════════╗
-    ║       novel-agent 工作流演示            ║
-    ║  展示: 初始化 → 构建索引 → 工作流 → 更新  ║
-    ╚══════════════════════════════════════════╝
+    ===========================
+       novel-agent 工作流演示
+    ===========================
     """, 'header'))
-    
+
     if not check_dependencies():
         sys.exit(1)
-    
+
     if init_demo_project():
         build_demo_index()
-    
+
     demo_workflow_state()
     demo_incremental_update()
     show_final_status()
-    
+
     print(c("\n" + "="*60, 'header'))
     print(c("  演示完成！", 'ok'))
     print(c("="*60 + "\n", 'header'))
-    
+
     cleanup()
-    
+
     print("""
 下一步：
   1. 填写 demo-novel/ 中的模板文件
