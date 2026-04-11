@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -296,124 +296,594 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);font-si
 
 
 <script>
-var API='http://localhost:8765';
-var WORKSPACE=null;
-var _oldApi=function(p){return fetch(API+p).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});};
-var _oldApiText=function(p){return fetch(API+p).then(function(r){return r.ok?r.text():null;}).catch(function(){return null;});};
-function api(p){return fetch(API+p+(WORKSPACE?"&workspace="+encodeURIComponent(WORKSPACE):"")).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}
-function apiText(p){return fetch(API+p+(WORKSPACE?"&workspace="+encodeURIComponent(WORKSPACE):"")).then(function(r){return r.ok?r.text():null;}).catch(function(){return null;});}
-function apiPost(p,data){return fetch(API+p,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)}).then(function(r){return r.json();}).catch(function(e){return{error:e.message};});}
-PT={dashboard:"仪表盘",chapters:"章节列表",studio:"章节工作室",beats:"伏笔追踪",characters:"角色档案",world:"世界设定",style:"写作风格",decisions:"决策中心",tools:"检查工具",settings:"设置"};
-function loadStudio(){loadWorkflow();loadCfgDisplay();loadChapterSelect();}
-function loadWorkflow(){api("/api/workflow").then(function(state){var wf=state&&state.current_workflow;var badge=document.getElementById("wf-status-badge");var stepsEl=document.getElementById("wf-steps");var ctrls=document.getElementById("wf-controls");if(!wf||wf.status!=="running"){badge.textContent="";badge.className="wf-status-badge";stepsEl.innerHTML='<div class="msg msg-c">暂无运行中的工作流</div>';ctrls.style.display="none";return;}badge.textContent=wf.status==="waiting_human"?"⏸ 等待决策":"▶ 运行中";badge.className="wf-status-badge "+(wf.status==="waiting_human"?"wf-waiting":"wf-running");var html="";(wf.steps||[]).forEach(function(s){var ia=s.step===wf.current_step;var id=s.step<wf.current_step;html+='<div class="wf-step "+(ia?"active":"")+(id?" done":"")+'"><div class="wf-step-num">'+(id?"✓":s.step)+'</div><div class="wf-step-role">'+s.role+'</div><div class="wf-step-action">'+s.action+'</div></div>';});stepsEl.innerHTML=html;ctrls.style.display="flex";});}
-function loadCfgDisplay(){api("/api/config").then(function(cfg){var p=(cfg&&cfg.project)||{};var w=(cfg&&cfg.writing)||{};var l=["标题: "+(p.title||"未设置"),"框架: "+(p.narrative_framework||"three_act"),"自主级别: "+(p.default_autonomy||"L2"),"最低字数: "+(w.min_words_per_chapter||3000)+" 字/章","要求结尾钩子: "+(w.require_chapter_hook?"是":"否")];document.getElementById("cfg-display").innerHTML='<div style="color:var(--text-dim);line-height:2">'+l.join("<br>")+"</div>";});}
-function loadChapterSelect(){api("/api/chapters").then(function(chs){var sel=document.getElementById("ch-select");if(!chs)return;var o='<option value="">— 选择章节审稿 —</option>';(chs||[]).forEach(function(c){o+='<option value="'+c.file+'">'+c.num+" "+(c.title||"")+"</option>";});sel.innerHTML=o;});}
-function startWriteChapter(){var ch=prompt("输入章节号（如 ch009）：");if(!ch||!ch.trim())return;ch=ch.trim();apiPost("/api/workflow/start",{workflow:"write_chapter",chapter:ch,task_id:"task_"+ch}).then(function(r){if(r.error)alert("错误: "+r.error);else{alert("工作流已启动！请在章节工作室查看");loadWorkflow();}});}
-function startReviewChapter(){var sel=document.getElementById("ch-select");var file=sel.value;if(!file){alert("请先在章节工作室选择要审稿的章节");return;}var ch=file.replace(".md","");apiPost("/api/workflow/start",{workflow:"review_chapter",chapter:ch,task_id:"review_"+ch}).then(function(r){if(r.error)alert("错误: "+r.error);else{alert("审稿工作流已启动");loadWorkflow();}});}
-function wfAdvance(){apiPost("/api/workflow/advance",{}).then(function(r){if(r.error)alert("错误: "+r.error);else loadWorkflow();});}
-function wfWaiting(){apiPost("/api/workflow/advance",{status:"waiting_human"}).then(function(r){if(r.error)alert("错误: "+r.error);else loadWorkflow();});}
-function wfComplete(){if(!confirm("确认完成当前工作流？"))return;apiPost("/api/workflow/complete",{}).then(function(r){if(r.error)alert("错误: "+r.error);else loadWorkflow();});}
-var _selOpts={};
-function loadDecisions(){api("/api/decisions").then(function(r){var pending=(r&&r.pending)||[];var all=(r&&r.all)||[];document.getElementById("dec-count").textContent=pending.length+" 项待决 / "+all.length+" 总计";var el=document.getElementById("dec-list");if(!all.length){el.innerHTML='<div class="msg msg-k">暂无决策记录 ✓</div>';return;}el.innerHTML=all.map(function(d){var cls=d.status==="waiting_human"?"waiting":"decided";var sl=d.status==="waiting_human"?"待决":"已决";var oh="";if(d.options&&d.status==="waiting_human"){oh='<div class="d-opts">'+d.options.map(function(o){return'<div class="d-opt" id="opt-'+d.id+'-'+o.id+'" onclick="selectOpt(&quot;'+d.id+'&quot;,&quot;'+o.id+'&quot;)"><div class="d-opt-id">'+o.id+'</div><div><div class="d-opt-label">'+o.label+'</div>'+(o.pros&&o.pros.length?'<div class="d-opt-pros">+ '+o.pros.join(", ")+"</div>":"")+(o.cons&&o.cons.length?'<div class="d-opt-cons">- '+o.cons.join(", ")+"</div>":"")+"</div></div>";}).join("")+"</div>";if(d.recommended)oh+='<div class="d-recommended">★ 推荐: '+d.recommended+"</div>";oh+='<textarea class="d-notes" id="notes-'+d.id+'" placeholder="备注（可选）"></textarea>';oh+='<div class="d-actions"><button class="btn btn-p btn-sm" onclick="resolveDecision(&quot;'+d.id+'&quot;)">✓ 确认决策</button></div>';}else if(d.status==="decided"){oh+='<div class="d-actions"><span class="d-status decided">✓ 已决定: '+d.chosen_option+"</span>"+(d.notes?' <span style="color:var(--text-dim);font-size:12px">'+d.notes+"</span>":"")+"</div>";}return'<div class="decision-card '+cls+'"><div class="d-header"><span class="d-id">'+d.id+'</span><span class="d-type">'+d.type+'</span><span class="d-status '+cls+'">'+sl+"</span></div><div class="d-summary">"+(d.summary||"")+"</div>"+(d.why_it_matters?'<div class="d-why">⚠ '+d.why_it_matters+"</div>":"")+oh+(d.chapter?'<div style="margin-top:8px;font-size:11.5px;color:var(--text-dim)">章节: '+d.chapter+" | 创建: "+(d.created_at||"").slice(0,10)+"</div>":"")+"</div>";}).join("");});}
-function selectOpt(did,oid){_selOpts[did]=oid;document.querySelectorAll('[id^="opt-'+did+'"]').forEach(function(el){el.classList.remove("selected");});document.querySelectorAll("#opt-"+did+"-"+oid).forEach(function(el){el.classList.add("selected");});}
-function resolveDecision(did){var opt=_selOpts[did]||prompt("输入选项ID（A/B/C...）：");if(!opt)return;var nt=document.getElementById("notes-"+did);nt=nt?nt.value:"";apiPost("/api/decisions/"+did+"/resolve",{option:opt,notes:nt}).then(function(r){if(r.error)alert("错误: "+r.error);else loadDecisions();});}
-function loadSettings(){var badge=document.getElementById("ws-badge");badge.textContent=WORKSPACE||"默认";badge.style.display="inline";document.getElementById("cfg-workspace").textContent=WORKSPACE||"server.js 同目录";document.getElementById("ws-input").value=WORKSPACE||"";api("/api/config").then(function(cfg){var p=(cfg&&cfg.project)||{};var h='<div class="settings-row"><div class="settings-label">书名</div><div class="settings-value">'+(p.title||"未设置")+'</div></div><div class="settings-row"><div class="settings-label">叙事框架</div><div class="settings-value">'+(p.narrative_framework||"three_act")+'</div></div><div class="settings-row"><div class="settings-label">默认自主级别</div><div class="settings-value">'+(p.default_autonomy||"L2")+'</div></div><div class="settings-row"><div class="settings-label">语言</div><div class="settings-value">'+(p.language||"zh-CN")+"</div></div>";document.getElementById("cfg-full").innerHTML=h;});}
-function setWorkspace(){var ws=document.getElementById("ws-input").value.trim();if(!ws)return;fetch(API+"/api/workspace",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({workspace:ws})}).then(function(r){return r.json();}).then(function(d){if(d.status==="ok"){WORKSPACE=ws;alert("已切换到: "+ws);loadSettings();}else{alert("切换失败");}}).catch(function(e){alert("错误: "+e.message);});}
-function resetWorkspace(){WORKSPACE=null;document.getElementById("ws-input").value="";document.getElementById("cfg-workspace").textContent="server.js 同目录（默认）";document.getElementById("ws-badge").style.display="none";alert("已重置为默认工作区");}
-// Dashboard override with decisions
-var _origLoadDash=loadDash;
-function loadDash(){api("/api/stats").then(function(d){if(!d){updateStatus(false);return;}updateStatus(true);document.getElementById("sv-ch").textContent=d.chapterCount||0;document.getElementById("sv-words").textContent=((d.totalWords||0)/10000).toFixed(1)+"万字";document.getElementById("sv-beats").textContent=d.beatCount||0;document.getElementById("sv-resolved").textContent=(d.resolvedBeats||0)+" 已回收";document.getElementById("sv-chars").textContent=d.charCount||0;document.getElementById("sv-alive").textContent=(d.activeChars||0)+" 在世";document.getElementById("sv-decisions").textContent="-";});api("/api/decisions").then(function(r){var pending=(r&&r.pending)?r.pending.length:0;document.getElementById("sv-decisions").textContent=pending;var rd=document.getElementById("rd");if(pending>0){rd.innerHTML=r.pending.slice(0,3).map(function(x){return'<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px"><span style="background:rgba(210,153,34,.15);color:var(--warning);padding:2px 7px;border-radius:8px;font-size:11px;margin-right:8px">待决</span><span>'+(x.summary||"").slice(0,40)+"</span></div>";}).join("");}else{rd.innerHTML='<div class="msg msg-k">暂无待确认决策 ✓</div>';}});api("/api/beats").then(function(b){var ov=document.getElementById("ov");if(!b){ov.innerHTML='<div class=msg>加载失败</div>';return;}var list=b.filter(function(x){return x.status==="overdue";});if(!list.length){ov.innerHTML='<div class="msg msg-k">✓ 暂无逾期</div>';return;}ov.innerHTML=list.slice(0,5).map(function(x){return'<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px"><span style="background:rgba(248,81,73,.15);color:var(--danger);padding:2px 7px;border-radius:8px;font-size:11px">逾期</span><span class=bid>'+x.id+'</span><span style="flex:1;color:var(--text-dim)">'+((x.description||"").slice(0,40))+'</span><span style="font-size:11.5px;color:var(--text-dim)">ch'+(x.plannedChapter||"-")+"</span></div>";}).join("");});api("/api/chapters").then(function(c){var rc=document.getElementById("rc");if(!c){rc.innerHTML='<div class=msg>加载失败</div>';return;}var r=(c||[]).slice(-5).reverse();if(!r.length){rc.innerHTML='<div class="msg msg-c">暂无章节</div>';return;}rc.innerHTML=r.map(function(ch){return'<div class=chitem onclick="openChapter(\''+ch.file+'\')"><span class=chn>'+ch.num+'</span><span class=cht>'+(ch.title||"无标题")+'</span><span class=chw>'+ch.words+'字</span><span class=charrow>→</span></div>';}).join("");});}
-// Tools page - update knowledge graph with Chinese labels
-var _origLoadTools=loadTools;
-function loadTools(){var og=document.getElementById("og");api("/api/ontology").then(function(d){if(!d){og.innerHTML='<div class=msg>加载失败</div>';return;}var types={};d.forEach(function(e){types[e.type]=(types[e.type]||0)+1;});var typeMap={"Character":"角色","Faction":"势力","Location":"地点","Scene":"场景","PlotBeat":"伏笔","Item":"道具"};og.innerHTML='<div class=ogrid>'+Object.keys(types).map(function(t){return'<div class=oitem><div class=ocount>'+types[t]+'</div><div class=olabel>'+(typeMap[t]||t)+'</div></div>';}).join("")+"</div><div class="msg" style="margin-top:12px;font-size:12px">共 "+d.length+" 条实体</div>";});}
-loadDash();
-// Navigation
-function nav(p){
-document.querySelectorAll('.nav-item').forEach(function(el){el.classList.toggle('active',el.dataset.p===p);});
-document.querySelectorAll('.page').forEach(function(el){el.classList.toggle('page-on',el.id==='pg-'+p);});
-document.getElementById('tt').textContent=PT[p]||p;
-var f={dashboard:loadDash,chapters:loadChapters,studio:loadStudio,beats:loadBeats,characters:loadChars,world:loadWorld,style:loadStyle,decisions:loadDecisions,tools:loadTools,settings:loadSettings};
-if(f[p])f[p]();}
-document.querySelectorAll('.nav-item').forEach(function(el){el.addEventListener('click',function(){nav(el.dataset.p);});});
-function updateStatus(ok){
-document.getElementById('sd').className='dot '+(ok?'dot-ok':'dot-err');
-document.getElementById('st').textContent=ok?'服务器已连接':'未连接';}
-updateStatus(false);
-function md(t){
-if(!t)return'<div class=msg>文件为空</div>';
-t=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-t=t.replace(/```(\w*)\n?([\s\S]*?)```/g,function(m,c,code){return'<pre><code>'+code.replace(/</g,'&lt;')+'</code></pre>';});
-t=t.replace(/`([^`]+)`/g,'<code>$1</code>');
-t=t.replace(/^#{6}\s+(.+)$/gm,'<h3>$1</h3>');
-t=t.replace(/^#{5}\s+(.+)$/gm,'<h3>$1</h3>');
-t=t.replace(/^#{4}\s+(.+)$/gm,'<h3>$1</h3>');
-t=t.replace(/^#{3}\s+(.+)$/gm,'<h2>$1</h2>');
-t=t.replace(/^#{2}\s+(.+)$/gm,'<h2>$1</h2>');
-t=t.replace(/^#{1}\s+(.+)$/gm,'<h1>$1</h1>');
-t=t.replace(/^>\s+(.+)$/gm,'<blockquote>$1</blockquote>');
-t=t.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
-t=t.replace(/\*(.+?)\*/g,'<em>$1</em>');
-t=t.replace(/^- (.+)$/gm,'<li>$1</li>');
-t=t.replace(/(<li>[\s\S]*?<\/li>)/g,'<ul>$1</ul>');
-t=t.replace(/\n\n/g,'</p><p>');
-t=t.replace(/^(?!<[hupbtl])(.+)$/gm,'<p>$1</p>');
-return t.replace(/<p>\s*<\/p>/g,'');}
-function fmt(l){
-if(l.includes('[WARNING]'))return'<span class=out-w>'+l+'</span>';
-if(l.includes('[ERROR]'))return'<span class=out-e>'+l+'</span>';
-if(l.includes('✅')||l.includes(' ok'))return'<span class=out-k>'+l+'</span>';
-return l;}
-// Original page loaders
-function loadChapters(){
-api('/api/chapters').then(function(d){
-var el=document.getElementById('cl');
-if(!d||!d.length){el.innerHTML='<div class=msg>暂无章节</div>';return;}
-el.innerHTML=d.map(function(x){return'<div class="cli-item"><span class="cli-n">'+x.file.replace('.md','')+'</span><span class="cli-t">'+x.title+'</span><span class="cli-w">'+x.words+'字</span></div>';}).join('');});}
-function loadBeats(){
-api('/api/beats').then(function(d){
-var el=document.getElementById('bt');
-if(!d||!d.length){el.innerHTML='<tr><td colspan="6" class=msg>暂无伏笔</td></tr>';return;}
-el.innerHTML=d.map(function(x){
-var bg='bg-g';
-if(x.status==='overdue')bg='bg-r';
-else if(x.status==='pending'||x.status==='active')bg='bg-y';
-else if(x.status==='resolved')bg='bg-g';
-var st=x.status==='overdue'?'逾期':x.status==='resolved'?'已回收':x.status==='active'?'激活':'待处理';
-return'<tr><td><span class=bid>'+x.id+'</span></td><td>'+(x.type||'')+'</td><td><span class=bdesc>'+x.description+'</span></td><td>'+(x.plantedChapter||'')+'</td><td>'+(x.plannedChapter||'')+'</td><td><span class="bg '+bg+'">'+st+'</span></td></tr>';}).join('');});}
-function exportBeats(){
-api('/api/beats').then(function(d){
-if(!d||!d.length)return;
-var csv='ID,类型,描述,埋入章节,计划章节,状态\n';
-d.forEach(function(x){csv+='"'+x.id+'","'+(x.type||'')+'","'+(x.description||'')+'","'+(x.plantedChapter||'')+'","'+(x.plannedChapter||'')+'","'+(x.status||'')+'"\n';});
-var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-var url=URL.createObjectURL(blob);
-var a=document.createElement('a');
-a.href=url;a.download='beats_export.csv';a.click();
-URL.revokeObjectURL(url);});}
-function loadChars(){
-api('/api/characters').then(function(d){
-var el=document.getElementById('cg');
-if(!d||!d.length){el.innerHTML='<div class=msg>暂无角色</div>';return;}
-el.innerHTML=d.map(function(x){
-var role={'protagonist':'主角','antagonist':'反派','supporting':'配角'}[x.role]||'配角';
-var status={'alive':'在世','dead':'已故'}[x.status]||'在世';
-return'<div class=cc><div class=cn>'+x.name+'</div><div class=cm><span>'+role+'</span><span>'+status+'</span></div>'+(x.faction?'<div class=cm><span>'+x.faction+'</span></div>':'')+'</div>';}).join('');});}
-function loadWorld(){
-var el=document.getElementById('wm');
-apiText('/api/read?path='+encodeURIComponent('world.md')).then(function(t){if(t){el.innerHTML=md(t);}else{el.innerHTML='<div class=msg>world.md 未找到</div>';}});}
-function loadStyle(){
-var el=document.getElementById('sm');
-apiText('/api/read?path='+encodeURIComponent('style_guide.md')).then(function(t){if(t){el.innerHTML=md(t);}else{el.innerHTML='<div class=msg>style_guide.md 未找到</div>';}});}
-function runConsistency(){
-var o=document.getElementById('cout');
-o.classList.add('out-on');o.innerHTML='运行中...';
-fetch(API+'/api/run?script=consistency').then(function(r){return r.text();}).then(function(t){
-o.innerHTML=t.split('\n').map(function(l){return fmt(l);}).join('\n');
-_origLoadDash();});}
-function closeModal(){document.getElementById('mdl').classList.remove('modal-on');}
-document.getElementById('mdl').addEventListener('click',function(e){if(e.target===this)closeModal();});
+var API = 'http://localhost:8765';
+var WORKSPACE = null;
+var PT = {
+  dashboard: '仪表盘',
+  chapters: '章节列表',
+  studio: '章节工作室',
+  beats: '伏笔追踪',
+  characters: '角色档案',
+  world: '世界设定',
+  style: '写作风格',
+  decisions: '决策中心',
+  tools: '检查工具',
+  settings: '设置'
+};
+var _selOpts = {};
 
+function withWorkspace(p) {
+  if (!WORKSPACE) return p;
+  return p + (p.indexOf('?') === -1 ? '?' : '&') + 'workspace=' + encodeURIComponent(WORKSPACE);
+}
+
+function api(p) {
+  return fetch(API + withWorkspace(p))
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .catch(function() { return null; });
+}
+
+function apiText(p) {
+  return fetch(API + withWorkspace(p))
+    .then(function(r) { return r.ok ? r.text() : null; })
+    .catch(function() { return null; });
+}
+
+function apiPost(p, data) {
+  return fetch(API + p, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data || {})
+  }).then(function(r) {
+    return r.json();
+  }).catch(function(e) {
+    return { error: e.message };
+  });
+}
+
+function frameworkLabel(v) {
+  var map = {
+    three_act: '三幕式（three_act）',
+    hero_journey: '英雄之旅（hero_journey）',
+    snowflake: '雪花法（snowflake）',
+    other: '自定义（other）'
+  };
+  return map[v] || v || '三幕式（three_act）';
+}
+
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function updateStatus(ok) {
+  var dot = document.getElementById('sd');
+  var st = document.getElementById('st');
+  if (dot) dot.className = 'dot ' + (ok ? 'dot-ok' : 'dot-err');
+  if (st) st.textContent = ok ? '服务器已连接' : '未连接';
+}
+
+function openModal(title, html) {
+  document.getElementById('mt').textContent = title || '';
+  document.getElementById('mb').innerHTML = html || '';
+  document.getElementById('mdl').classList.add('modal-on');
+}
+
+function closeModal() {
+  document.getElementById('mdl').classList.remove('modal-on');
+}
+
+function md(text) {
+  if (!text) return '<div class="msg">文件为空</div>';
+  var t = esc(text);
+  t = t.replace(/```(\w*)\n?([\s\S]*?)```/g, function(_, __, code) {
+    return '<pre><code>' + code + '</code></pre>';
+  });
+  t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+  t = t.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+  t = t.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+  t = t.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+  t = t.replace(/^>\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+  t = t.replace(/^-\s+(.+)$/gm, '<li>$1</li>');
+  t = t.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
+  t = t.replace(/\n\n/g, '</p><p>');
+  t = t.replace(/^(?!<[hupbtl])(.+)$/gm, '<p>$1</p>');
+  return t.replace(/<p>\s*<\/p>/g, '');
+}
+
+function fmtRunOutput(text) {
+  return String(text || '')
+    .split('\n')
+    .map(function(line) {
+      if (line.indexOf('[ERROR]') >= 0) return '<span class="out-e">' + esc(line) + '</span>';
+      if (line.indexOf('[WARN]') >= 0 || line.indexOf('[WARNING]') >= 0) return '<span class="out-w">' + esc(line) + '</span>';
+      if (line.indexOf('[OK]') >= 0 || line.indexOf('?') >= 0) return '<span class="out-k">' + esc(line) + '</span>';
+      return esc(line);
+    }).join('\n');
+}
+
+function nav(p) {
+  document.querySelectorAll('.nav-item').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.p === p);
+  });
+  document.querySelectorAll('.page').forEach(function(el) {
+    el.classList.toggle('page-on', el.id === 'pg-' + p);
+  });
+  document.getElementById('tt').textContent = PT[p] || p;
+  var f = {
+    dashboard: loadDash,
+    chapters: loadChapters,
+    studio: loadStudio,
+    beats: loadBeats,
+    characters: loadChars,
+    world: loadWorld,
+    style: loadStyle,
+    decisions: loadDecisions,
+    tools: loadTools,
+    settings: loadSettings
+  };
+  if (f[p]) f[p]();
+}
+
+function loadDash() {
+  Promise.all([api('/api/stats'), api('/api/decisions'), api('/api/beats'), api('/api/chapters')]).then(function(all) {
+    var stats = all[0] || {};
+    var decisions = all[1] || { pending: [] };
+    var beats = all[2] || [];
+    var chapters = all[3] || [];
+
+    updateStatus(!!all[0]);
+
+    var sg = document.getElementById('sg');
+    if (sg) {
+      var totalWords = Number(stats.totalWords || 0);
+      sg.innerHTML = '' +
+        '<div class="sc"><div class="sl">章节数</div><div class="sv">' + (stats.chapterCount || 0) + '</div><div class="ss">已写章节</div></div>' +
+        '<div class="sc"><div class="sl">总字数</div><div class="sv">' + totalWords + '</div><div class="ss">累计正文字符</div></div>' +
+        '<div class="sc"><div class="sl">伏笔总数</div><div class="sv">' + (stats.beatCount || 0) + '</div><div class="ss">含待回收与已回收</div></div>' +
+        '<div class="sc"><div class="sl">待决策</div><div class="sv">' + ((decisions.pending || []).length || 0) + '</div><div class="ss">人工确认项</div></div>';
+    }
+
+    var ov = document.getElementById('ov');
+    if (ov) {
+      var overdue = (beats || []).filter(function(b) { return b.status === 'overdue'; });
+      if (!overdue.length) {
+        ov.innerHTML = '<div class="msg msg-k">✓ 暂无逾期伏笔</div>';
+      } else {
+        ov.innerHTML = overdue.slice(0, 8).map(function(x) {
+          return '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.06)">' +
+            '<span class="bid">' + esc(x.id) + '</span>' +
+            '<span style="flex:1;color:var(--text-muted)">' + esc((x.description || '').slice(0, 50)) + '</span>' +
+            '<span style="font-size:12px;color:var(--red)">计划 ch' + esc(x.plannedChapter || '-') + '</span>' +
+          '</div>';
+        }).join('');
+      }
+    }
+
+    var rc = document.getElementById('rc');
+    if (rc) {
+      if (!chapters.length) {
+        rc.innerHTML = '<div class="msg msg-c">暂无章节</div>';
+      } else {
+        rc.innerHTML = chapters.slice(-6).reverse().map(function(ch) {
+          return '<div class="cli-item" onclick="openChapter(' + JSON.stringify(ch.file) + ')">' +
+            '<span class="cli-n">' + esc(ch.num) + '</span>' +
+            '<span class="cli-t">' + esc(ch.title || '无标题') + '</span>' +
+            '<span class="cli-w">' + esc(ch.words || 0) + '字</span>' +
+          '</div>';
+        }).join('');
+      }
+    }
+  });
+}
+
+function loadChapters() {
+  api('/api/chapters').then(function(chs) {
+    var el = document.getElementById('cl');
+    if (!el) return;
+    if (!chs || !chs.length) {
+      el.innerHTML = '<div class="msg">暂无章节</div>';
+      return;
+    }
+    el.innerHTML = chs.map(function(ch) {
+      return '<div class="cli-item" onclick="openChapter(' + JSON.stringify(ch.file) + ')">' +
+        '<span class="cli-n">' + esc(ch.file.replace('.md', '')) + '</span>' +
+        '<span class="cli-t">' + esc(ch.title || '无标题') + '</span>' +
+        '<span class="cli-w">' + esc(ch.words || 0) + '字</span>' +
+      '</div>';
+    }).join('');
+  });
+}
+
+function loadBeats() {
+  api('/api/beats').then(function(beats) {
+    var el = document.getElementById('bt');
+    if (!el) return;
+    if (!beats || !beats.length) {
+      el.innerHTML = '<tr><td colspan="6" class="msg">暂无伏笔</td></tr>';
+      return;
+    }
+    el.innerHTML = beats.map(function(x) {
+      var bg = 'bg-y';
+      var st = '待处理';
+      if (x.status === 'resolved') { bg = 'bg-g'; st = '已回收'; }
+      if (x.status === 'active') { bg = 'bg-a'; st = '激活'; }
+      if (x.status === 'overdue') { bg = 'bg-r'; st = '逾期'; }
+      return '<tr>' +
+        '<td><span class="bid">' + esc(x.id) + '</span></td>' +
+        '<td>' + esc(x.type || '') + '</td>' +
+        '<td><span class="bdesc">' + esc(x.description || '') + '</span></td>' +
+        '<td>' + esc(x.plantedChapter || '') + '</td>' +
+        '<td>' + esc(x.plannedChapter || '') + '</td>' +
+        '<td><span class="bg ' + bg + '">' + st + '</span></td>' +
+      '</tr>';
+    }).join('');
+  });
+}
+
+function exportBeats() {
+  api('/api/beats').then(function(beats) {
+    if (!beats || !beats.length) return;
+    var csv = 'ID,类型,描述,埋入章节,计划章节,状态\n';
+    beats.forEach(function(x) {
+      csv += '"' + (x.id || '') + '","' + (x.type || '') + '","' + (x.description || '') + '","' + (x.plantedChapter || '') + '","' + (x.plannedChapter || '') + '","' + (x.status || '') + '"\n';
+    });
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'beats.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+}
+
+function loadChars() {
+  api('/api/characters').then(function(chars) {
+    var el = document.getElementById('cg');
+    if (!el) return;
+    if (!chars || !chars.length) {
+      el.innerHTML = '<div class="msg">暂无角色数据</div>';
+      return;
+    }
+    el.innerHTML = chars.map(function(c) {
+      var roleLabel = c.role === 'protagonist' ? '主角' : (c.role === 'antagonist' ? '反派' : '配角');
+      var status = c.status === 'dead' ? '已故' : '在世';
+      return '<div class="cc">' +
+        '<div class="cn">' + esc(c.name || '未命名角色') + '</div>' +
+        '<div class="cm"><span>角色定位</span>' + esc(roleLabel) + '</div>' +
+        '<div class="cm"><span>势力</span>' + esc(c.faction || '-') + '</div>' +
+        '<div class="cm"><span>状态</span>' + esc(status) + '</div>' +
+      '</div>';
+    }).join('');
+  });
+}
+
+function loadWorld() {
+  apiText('/api/read?path=' + encodeURIComponent('world.md')).then(function(t) {
+    var el = document.getElementById('wm');
+    if (el) el.innerHTML = md(t || '# world.md\n\n暂无内容');
+  });
+}
+
+function loadStyle() {
+  apiText('/api/read?path=' + encodeURIComponent('style_guide.md')).then(function(t) {
+    var el = document.getElementById('sm');
+    if (el) el.innerHTML = md(t || '# style_guide.md\n\n暂无内容');
+  });
+}
+
+function loadTools() {
+  api('/api/ontology').then(function(data) {
+    var el = document.getElementById('og');
+    if (!el) return;
+    if (!data || !data.length) {
+      el.innerHTML = '<div class="msg">暂无图谱数据</div>';
+      return;
+    }
+    var typeMap = { Character: '角色', Faction: '势力', Location: '地点', Scene: '场景', PlotBeat: '伏笔', Item: '道具' };
+    var counter = {};
+    data.forEach(function(x) { counter[x.type] = (counter[x.type] || 0) + 1; });
+    el.innerHTML = '<div class="ogrid">' + Object.keys(counter).map(function(k) {
+      return '<div class="oitem"><div class="ocount">' + counter[k] + '</div><div class="olabel">' + esc(typeMap[k] || k) + '</div></div>';
+    }).join('') + '</div><div class="msg" style="margin-top:12px;font-size:12px">共 ' + data.length + ' 条实体</div>';
+  });
+}
+
+function runConsistency() {
+  var out = document.getElementById('cout');
+  if (out) {
+    out.classList.add('out-on');
+    out.textContent = '运行中...';
+  }
+  apiText('/api/run?script=consistency').then(function(t) {
+    if (out) out.innerHTML = fmtRunOutput(t || '无输出');
+  });
+}
+
+function runBeats() {
+  var out = document.getElementById('bout');
+  if (out) {
+    out.classList.add('out-on');
+    out.textContent = '运行中...';
+  }
+  apiText('/api/run?script=beats').then(function(t) {
+    if (out) out.innerHTML = fmtRunOutput(t || '无输出');
+    loadBeats();
+    loadDash();
+  });
+}
+
+function openChapter(file) {
+  var rel = 'chapters/' + String(file || '');
+  apiText('/api/read?path=' + encodeURIComponent(rel)).then(function(t) {
+    openModal(file || '章节', md(t || '# 空章节'));
+  });
+}
+
+function loadWorkflow() {
+  api('/api/workflow').then(function(state) {
+    var wf = state && state.current_workflow;
+    var badge = document.getElementById('wf-status-badge');
+    var stepsEl = document.getElementById('wf-steps');
+    var ctrls = document.getElementById('wf-controls');
+    if (!wf || wf.status !== 'running') {
+      if (badge) { badge.textContent = ''; badge.className = 'wf-status-badge'; }
+      if (stepsEl) stepsEl.innerHTML = '<div class="msg msg-c">暂无运行中的工作流</div>';
+      if (ctrls) ctrls.style.display = 'none';
+      return;
+    }
+    if (badge) {
+      badge.textContent = wf.status === 'waiting_human' ? '⏸ 等待决策' : '▶ 运行中';
+      badge.className = 'wf-status-badge ' + (wf.status === 'waiting_human' ? 'wf-waiting' : 'wf-running');
+    }
+    var html = '';
+    (wf.steps || []).forEach(function(s) {
+      var active = s.step === wf.current_step;
+      var done = s.step < wf.current_step;
+      html += '<div class="wf-step ' + (active ? 'active' : '') + (done ? ' done' : '') + '">' +
+        '<div class="wf-step-num">' + (done ? '✓' : s.step) + '</div>' +
+        '<div class="wf-step-role">' + esc(s.role) + '</div>' +
+        '<div class="wf-step-action">' + esc(s.action) + '</div>' +
+      '</div>';
+    });
+    if (stepsEl) stepsEl.innerHTML = html || '<div class="msg msg-c">暂无运行中的工作流</div>';
+    if (ctrls) ctrls.style.display = 'flex';
+  });
+}
+
+function loadCfgDisplay() {
+  api('/api/config').then(function(cfg) {
+    var p = (cfg && cfg.project) || {};
+    var w = (cfg && cfg.writing) || {};
+    var lines = [
+      '标题: ' + (p.title || '未设置'),
+      '框架: ' + frameworkLabel(p.narrative_framework || 'three_act'),
+      '自主级别: ' + (p.default_autonomy || 'L2'),
+      '最低字数: ' + (w.min_words_per_chapter || 3000) + ' 字/章',
+      '要求结尾钩子: ' + (w.require_chapter_hook ? '是' : '否')
+    ];
+    var el = document.getElementById('cfg-display');
+    if (el) el.innerHTML = '<div style="color:var(--text-dim);line-height:2">' + lines.join('<br>') + '</div>';
+  });
+}
+
+function loadChapterSelect() {
+  api('/api/chapters').then(function(chs) {
+    var sel = document.getElementById('ch-select');
+    if (!sel) return;
+    var o = '<option value="">— 选择章节审稿 —</option>';
+    (chs || []).forEach(function(c) {
+      o += '<option value="' + esc(c.file) + '">' + esc(c.num) + ' ' + esc(c.title || '') + '</option>';
+    });
+    sel.innerHTML = o;
+  });
+}
+
+function loadStudio() {
+  loadWorkflow();
+  loadCfgDisplay();
+  loadChapterSelect();
+}
+
+function startWriteChapter() {
+  if (!confirm('将自动识别下一章并执行完整写作流程（Planner → Writer → Editor）。是否继续？')) return;
+  apiPost('/api/write/chapter', {}).then(function(r) {
+    if (r.error) {
+      alert('错误: ' + r.error);
+      return;
+    }
+    alert('已完成写作：' + (r.chapter || '') + '\n输出：' + (r.chapter_file || ''));
+    loadWorkflow();
+    loadDash();
+    loadChapters();
+    loadChapterSelect();
+  });
+}
+
+function startReviewChapter() {
+  var sel = document.getElementById('ch-select');
+  var file = sel ? sel.value : '';
+  if (!file) {
+    alert('请先在章节工作室选择要审稿的章节');
+    return;
+  }
+  var ch = file.replace('.md', '');
+  apiPost('/api/workflow/start', { workflow: 'review_chapter', chapter: ch, task_id: 'review_' + ch }).then(function(r) {
+    if (r.error) alert('错误: ' + r.error);
+    else { alert('审稿工作流已启动'); loadWorkflow(); }
+  });
+}
+
+function wfAdvance() {
+  apiPost('/api/workflow/advance', {}).then(function(r) {
+    if (r.error) alert('错误: ' + r.error);
+    else loadWorkflow();
+  });
+}
+
+function wfWaiting() {
+  apiPost('/api/workflow/advance', { status: 'waiting_human' }).then(function(r) {
+    if (r.error) alert('错误: ' + r.error);
+    else loadWorkflow();
+  });
+}
+
+function wfComplete() {
+  if (!confirm('确认完成当前工作流？')) return;
+  apiPost('/api/workflow/complete', {}).then(function(r) {
+    if (r.error) alert('错误: ' + r.error);
+    else { loadWorkflow(); loadDash(); }
+  });
+}
+
+function loadDecisions() {
+  api('/api/decisions').then(function(r) {
+    var pending = (r && r.pending) || [];
+    var all = (r && r.all) || [];
+    var countEl = document.getElementById('dec-count');
+    if (countEl) countEl.textContent = pending.length + ' 项待决 / ' + all.length + ' 总计';
+
+    var el = document.getElementById('dec-list');
+    if (!el) return;
+    if (!all.length) {
+      el.innerHTML = '<div class="msg msg-k">暂无决策记录 ✓</div>';
+      return;
+    }
+
+    var html = '';
+    all.forEach(function(d) {
+      var cls = d.status === 'waiting_human' ? 'waiting' : 'decided';
+      var statusLabel = d.status === 'waiting_human' ? '待决' : '已决';
+      html += '<div class="decision-card ' + cls + '">';
+      html += '<div class="d-header"><span class="d-id">' + esc(d.id) + '</span><span class="d-type">' + esc(d.type) + '</span><span class="d-status ' + cls + '">' + statusLabel + '</span></div>';
+      html += '<div class="d-summary">' + esc(d.summary || '') + '</div>';
+      if (d.why_it_matters) html += '<div class="d-why">⚠ ' + esc(d.why_it_matters) + '</div>';
+
+      if (d.options && d.status === 'waiting_human') {
+        html += '<div class="d-opts">';
+        d.options.forEach(function(o) {
+          html += '<div class="d-opt" id="opt-' + esc(d.id) + '-' + esc(o.id) + '" onclick="selectOpt(' + JSON.stringify(d.id) + ',' + JSON.stringify(o.id) + ')">';
+          html += '<div class="d-opt-id">' + esc(o.id) + '</div>';
+          html += '<div><div class="d-opt-label">' + esc(o.label || '') + '</div>';
+          if (o.pros && o.pros.length) html += '<div class="d-opt-pros">+ ' + esc(o.pros.join(', ')) + '</div>';
+          if (o.cons && o.cons.length) html += '<div class="d-opt-cons">- ' + esc(o.cons.join(', ')) + '</div>';
+          html += '</div></div>';
+        });
+        html += '</div>';
+        if (d.recommended) html += '<div class="d-recommended">★ 推荐: ' + esc(d.recommended) + '</div>';
+        html += '<textarea class="d-notes" id="notes-' + esc(d.id) + '" placeholder="备注（可选）"></textarea>';
+        html += '<div class="d-actions"><button class="btn btn-p btn-sm" onclick="resolveDecision(' + JSON.stringify(d.id) + ')">✓ 确认决策</button></div>';
+      } else if (d.status === 'decided') {
+        html += '<div class="d-actions"><span class="d-status decided">✓ 已决定: ' + esc(d.chosen_option || '') + '</span>';
+        if (d.notes) html += ' <span style="color:var(--text-dim);font-size:12px">' + esc(d.notes) + '</span>';
+        html += '</div>';
+      }
+
+      if (d.chapter) {
+        html += '<div style="margin-top:8px;font-size:11.5px;color:var(--text-dim)">章节: ' + esc(d.chapter) + ' | 创建: ' + esc(String(d.created_at || '').slice(0, 10)) + '</div>';
+      }
+      html += '</div>';
+    });
+
+    el.innerHTML = html;
+  });
+}
+
+function selectOpt(did, oid) {
+  _selOpts[did] = oid;
+  document.querySelectorAll('[id^="opt-' + did + '"]').forEach(function(el) {
+    el.classList.remove('selected');
+  });
+  var target = document.getElementById('opt-' + did + '-' + oid);
+  if (target) target.classList.add('selected');
+}
+
+function resolveDecision(did) {
+  var opt = _selOpts[did] || prompt('输入选项ID（A/B/C...）：');
+  if (!opt) return;
+  var notesEl = document.getElementById('notes-' + did);
+  var notes = notesEl ? notesEl.value : '';
+  apiPost('/api/decisions/' + did + '/resolve', { option: opt, notes: notes }).then(function(r) {
+    if (r.error) alert('错误: ' + r.error);
+    else {
+      loadDecisions();
+      loadWorkflow();
+      loadDash();
+    }
+  });
+}
+
+function loadSettings() {
+  Promise.all([api('/api/workspace'), api('/api/config')]).then(function(all) {
+    var wsInfo = all[0] || {};
+    var cfg = all[1] || {};
+    var current = wsInfo.current || {};
+    WORKSPACE = current.workspace || WORKSPACE;
+
+    var badge = document.getElementById('ws-badge');
+    if (badge) { badge.textContent = WORKSPACE || '默认'; badge.style.display = 'inline'; }
+
+    var wsText = document.getElementById('cfg-workspace');
+    if (wsText) wsText.textContent = WORKSPACE || 'server.js 同目录（默认）';
+
+    var wsInput = document.getElementById('ws-input');
+    if (wsInput) wsInput.value = WORKSPACE || '';
+
+    var p = cfg.project || {};
+    var full = document.getElementById('cfg-full');
+    if (full) {
+      full.innerHTML = '' +
+        '<div class="settings-row"><div class="settings-label">书名</div><div class="settings-value">' + esc(p.title || '未设置') + '</div></div>' +
+        '<div class="settings-row"><div class="settings-label">叙事框架</div><div class="settings-value">' + esc(frameworkLabel(p.narrative_framework || 'three_act')) + '</div></div>' +
+        '<div class="settings-row"><div class="settings-label">默认自主级别</div><div class="settings-value">' + esc(p.default_autonomy || 'L2') + '</div></div>' +
+        '<div class="settings-row"><div class="settings-label">语言</div><div class="settings-value">' + esc(p.language || 'zh-CN') + '</div></div>';
+    }
+  });
+}
+
+function setWorkspace() {
+  var ws = (document.getElementById('ws-input').value || '').trim();
+  if (!ws) return;
+  apiPost('/api/workspace', { workspace: ws }).then(function(d) {
+    if (d && d.status === 'ok') {
+      WORKSPACE = d.workspace || ws;
+      alert('已切换到: ' + WORKSPACE);
+      loadSettings();
+      loadDash();
+      loadStudio();
+    } else {
+      alert('切换失败: ' + ((d && d.error) || '未知错误'));
+    }
+  });
+}
+
+function resetWorkspace() {
+  apiPost('/api/workspace', { workspace: '.' }).then(function(d) {
+    if (d && d.status === 'ok') {
+      WORKSPACE = d.workspace || null;
+      alert('已重置为默认工作区');
+      loadSettings();
+      loadDash();
+      loadStudio();
+    } else {
+      alert('重置失败: ' + ((d && d.error) || '未知错误'));
+    }
+  });
+}
+
+document.querySelectorAll('.nav-item').forEach(function(el) {
+  el.addEventListener('click', function() { nav(el.dataset.p); });
+});
+
+updateStatus(false);
+loadDash();
 </script>
 
 </body>
 </html>
+

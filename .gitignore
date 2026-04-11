@@ -48,3 +48,10 @@ index/.gitkeep
 
 # Workflow 状态（运行时生成）
 .workflow/
+
+# Local generated workspace artifacts
+chapters/
+index/*.json
+index/*.jsonl
+novel-agent.yaml
+workspace-template/novel-agent.yaml

@@ -139,13 +139,15 @@ class DecisionManager:
             state = load_wf_state(self.workspace)
             wf = state.get('current_workflow')
             if wf and wf.get('status') == 'waiting_human':
+                if not isinstance(wf.get('task_payload'), dict):
+                    wf['task_payload'] = {}
                 wf['status'] = 'running'
                 wf['task_payload']['human_decision'] = {
                     'chosen': chosen_option,
                     'notes': notes
                 }
                 state['current_workflow'] = wf
-                save_wf_state(self.workspace, self.workspace)
+                save_wf_state(self.workspace, state)
         except Exception as e:
             print(f"[WARN] 无法自动恢复工作流: {e}")
 
