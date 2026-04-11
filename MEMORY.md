@@ -28,6 +28,62 @@ novel/
 - 章节结尾必须有钩子
 - 伏笔统一记入beats/TRACKING.md
 
+## novel-agent 优化进展（2026-04-07）
+
+### 已完成
+
+**架构重构**：
+- 新建 `config/` 目录（4个 YAML 配置文件，与具体小说项目无关）
+  - `config/project.yaml` — 项目基础配置
+  - `config/writing.yaml` — 写作规则
+  - `config/validation.yaml` — 验证规则
+  - `config/platforms.yaml` — 多平台配置
+- 新建 `AGENT.md` — 平台无关的核心定义文件
+  - 5个角色的输入/输出 schema
+  - 任务类型定义
+  - 状态机（7态）
+  - 4条核心工作流
+  - 角色交接规则
+  - 人类决策点标准
+- 重写 `SKILL.md` — OpenClaw 薄适配层（只含平台特定约定）
+- 重写 `CLAUDE.md` — Claude Code/Codex 薄适配层
+
+**核心架构原则**：
+- AGENT.md 是业务核心，平台入口是薄适配层
+- config/ 是框架级配置，与具体小说项目完全解耦
+- 符合五份设计文档的要求
+
+### 下一步（按优先级）
+1. ~~建立 `index/` 结构化索引 schema~~ ✅ 已完成
+2. ~~建立角色提示模板 `roles/`~~ ✅ 已完成
+3. ~~建立 `scripts/workflow_state.py`~~ ✅ 已完成
+4. ~~建立 `scripts/incremental_index_update.py`~~ ✅ 已完成
+5. 更新 `SETUP_WIZARD.md`（对接新配置系统）
+6. 把 AGENT.md + roles/ 真正接入 OpenClaw skill 执行流程
+
+### 已创建的索引体系（index/）
+- `README.md` — 总说明
+- `characters_schema.md` — characters.json schema
+- `chapters_schema.md` — chapters.json schema
+- `beats_schema.md` — beats.jsonl schema（JSONL格式，append-only）
+- `locations_schema.md` — locations.json schema
+- `timeline_schema.md` — timeline.jsonl schema（含 knowledge_changes / state_changes）
+- `decisions_schema.md` — decisions.jsonl schema
+- `world_rules_schema.md` — world_rules.json schema
+
+### 已创建的角色模板（roles/）
+- `README.md` — 角色模板总说明
+- `supervisor.md` — Supervisor 提示模板（任务分发、决策升级）
+- `planner.md` — Planner 提示模板（大纲/章节规划）
+- `writer.md` — Writer 提示模板（正文写作）
+- `editor.md` — Editor 提示模板（审稿/一致性检查）
+- `world.md` — World 提示模板（设定管理/冲突检测）
+
+### 已创建的脚本（scripts/）
+- `build_index.py` — 全量索引构建（扫描任意小说项目生成初始索引）
+- `incremental_index_update.py` — 增量索引更新（7个命令：update_chapter/add_beat/update_beat/update_character/add_location/add_timeline_event/rebuild）
+- `workflow_state.py` — 工作流状态管理（7个命令：start/advance/complete/status/waiting/resume/list）
+
 ## 写作偏好与风格
 
 ## 系统角色设定（重要！）
